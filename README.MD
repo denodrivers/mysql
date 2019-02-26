@@ -6,14 +6,15 @@ Still under development.
 
 ## TODO
 
-- [x] connecting to database
-- [x] basic login authentication
-- [x] simple queries (no arguments)
-- [x] parsing data types
-- [ ] queries with parameters
-- [ ] close connection
-- [ ] connection pool
-- [ ] test case
+- [x] Connecting to database
+- [x] Basic login authentication
+- [x] Simple queries (no arguments)
+- [x] Parsing data types
+- [ ] Queries with parameters
+- [ ] Close connection
+- [ ] Connection pool
+- [ ] Transaction
+- [ ] Test case
 
 ## API
 
