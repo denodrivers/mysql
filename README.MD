@@ -5,16 +5,18 @@ MySQL database driver for Deno.
 Still under development.
 
 ## TODO
-[x] connecting to database
-[x] basic login authentication
-[x] simple queries (no arguments)
-[x] parsing data types
-[] queries with parameters
-[] close connection
-[] connection pool
-[] test case
+
+- [x] connecting to database
+- [x] basic login authentication
+- [x] simple queries (no arguments)
+- [x] parsing data types
+- [ ] queries with parameters
+- [ ] close connection
+- [ ] connection pool
+- [ ] test case
 
 ## API
+
 ### connet
 ```ts
 import { Client } from "https://raw.githubusercontent.com/manyuanrong/deno_mysql/master/mod.ts";
