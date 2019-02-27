@@ -4,6 +4,8 @@ MySQL database driver for Deno.
 
 Still under development.
 
+欢迎国内的小伙伴加我专门建的Deno QQ交流群：698469316
+
 ## TODO
 
 - [x] Connecting to database
