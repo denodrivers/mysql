@@ -1,4 +1,4 @@
-## deno_mysql
+# deno_mysql [![Build Status](https://www.travis-ci.org/manyuanrong/deno_mysql.svg?branch=master)](https://www.travis-ci.org/manyuanrong/deno_mysql)
 
 MySQL database driver for Deno.
 
