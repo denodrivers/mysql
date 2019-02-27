@@ -31,14 +31,14 @@ const client = await new Client().connect({
 
 ### create database
 ```ts
-await client.query(`CREATE DATABASE IF NOT EXISTS enok`);
-await client.query(`USE enok`);
+await client.execute(`CREATE DATABASE IF NOT EXISTS enok`);
+await client.execute(`USE enok`);
 ```
 
 ### create table
 ```ts
-await client.query(`DROP TABLE IF EXISTS users`);
-await client.query(`
+await client.execute(`DROP TABLE IF EXISTS users`);
+await client.execute(`
     CREATE TABLE users (
         id int(11) NOT NULL AUTO_INCREMENT,
         name varchar(100) NOT NULL,
