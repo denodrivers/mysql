@@ -33,6 +33,6 @@ const client = await new Client().connect({
 ```ts
 const username = "manyuanrong";
 const users = await client.query(`select * from users where username="${username}"`);
-const queryWithParams = await client.query("select ??,name from ?? where id", ["id", "users", 1]);
+const queryWithParams = await client.query("select ??,name from ?? where id = ?", ["id", "users", 1]);
 console.log(users, queryWithParams);
 ```
