@@ -14,7 +14,7 @@ Still under development.
 - [ ] Close connection
 - [ ] Connection pool
 - [ ] Transaction
-- [ ] Test case
+- [x] Test case
 
 ## API
 
