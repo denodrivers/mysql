@@ -1,9 +1,8 @@
 import { Conn, dial } from "deno";
-import { encode } from "./../modules.ts";
-import { BufferWriter } from "./buffer.ts";
 import { Client } from "./client.ts";
 import { log } from "./logger.ts";
 import { buildAuth } from "./packets/builders/auth.ts";
+import { buildQuery } from "./packets/builders/query.ts";
 import { ReceivePacket, SendPacket } from "./packets/packet.ts";
 import { parseError } from "./packets/parsers/err.ts";
 import { parseHandshake } from "./packets/parsers/handshake.ts";
@@ -62,12 +61,9 @@ export class Connection {
         this.state = ConnectionState.CLOSED;
     }
 
-    async query(sql: string): Promise<any[]> {
-        const data = encode(sql);
-        const writer = new BufferWriter(new Uint8Array(data.length + 1));
-        writer.write(3);
-        writer.writeBuffer(data);
-        await new SendPacket(writer.buffer, 0).send(this.conn);
+    async query(sql: string, params?: any[]): Promise<any[]> {
+        const data = buildQuery(sql, params);
+        await new SendPacket(data, 0).send(this.conn);
         let receive = await this.nextPacket();
         let fieldCount = receive.body.readEncodedLen();
         if (fieldCount === 0xff) {

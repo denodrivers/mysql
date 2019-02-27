@@ -10,7 +10,7 @@ Still under development.
 - [x] Basic login authentication
 - [x] Simple queries (no arguments)
 - [x] Parsing data types
-- [ ] Queries with parameters
+- [x] Queries with parameters
 - [ ] Close connection
 - [ ] Connection pool
 - [ ] Transaction
@@ -32,6 +32,7 @@ const client = await new Client().connect({
 ### query
 ```ts
 const username = "manyuanrong";
-const users = client.query(`select * from users where username="${username}"`);
-console.log(users);
+const users = await client.query(`select * from users where username="${username}"`);
+const queryWithParams = await client.query("select ??,name from ?? where id", ["id", "users", 1]);
+console.log(users, queryWithParams);
 ```

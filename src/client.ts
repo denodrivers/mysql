@@ -30,7 +30,7 @@ export class Client {
         return this;
     }
 
-    async query(sql: string): Promise<any[]> {
-        return await this.connection.query(sql);
+    async query(sql: string, params?: any[]): Promise<any[]> {
+        return await this.connection.query(sql, params);
     }
 }
