@@ -1,6 +1,5 @@
 package-lock.json
 package.json
-test.ts
 tsconfig.json
 .vscode
 node_modules

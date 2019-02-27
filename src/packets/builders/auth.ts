@@ -20,7 +20,7 @@ export function buildAuth(
     params: { username: string; password: string; db: string }
 ): Uint8Array {
     let clientParam: number =
-        CLIENT_CONNECT_WITH_DB |
+        (params.db ? CLIENT_CONNECT_WITH_DB : 0) |
         CLIENT_PLUGIN_AUTH |
         CLIENT_LONG_PASSWORD |
         CLIENT_PROTOCOL_41 |
@@ -45,29 +45,28 @@ export function buildAuth(
             .write(UTF8_GENERAL_CI)
             .skip(23)
             .writeNullTerminatedString(params.username);
-
-        const authData = auth(params.password, packet.seed);
-
-        if (
-            clientParam & CLIENT_PLUGIN_AUTH_LENENC_CLIENT_DATA ||
-            clientParam & CLIENT_SECURE_CONNECTION
-        ) {
-            // request lenenc-int length of auth-response and string[n] auth-response
-            writer.write(authData.length);
-            writer.writeBuffer(authData);
+        if (params.password) {
+            const authData = auth(params.password, packet.seed);
+            if (
+                clientParam & CLIENT_PLUGIN_AUTH_LENENC_CLIENT_DATA ||
+                clientParam & CLIENT_SECURE_CONNECTION
+            ) {
+                // request lenenc-int length of auth-response and string[n] auth-response
+                writer.write(authData.length);
+                writer.writeBuffer(authData);
+            } else {
+                writer.writeBuffer(authData);
+                writer.write(0);
+            }
         } else {
-            writer.writeBuffer(authData);
             writer.write(0);
         }
         if (clientParam & CLIENT_CONNECT_WITH_DB) {
             writer.writeNullTerminatedString(params.db);
         }
-
         if (clientParam & CLIENT_PLUGIN_AUTH) {
             writer.writeNullTerminatedString(packet.authPluginName);
         }
-
         return writer.wroteData;
     }
-    return null;
 }

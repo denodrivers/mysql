@@ -12,6 +12,13 @@ enum ConnectionState {
     CONNECTING, CONNECTED, COLSING, CLOSED
 };
 
+export type ExecuteResult = {
+    affectedRows?: number;
+    lastInsertId?: number;
+    fields?: FieldInfo[];
+    rows?: any[];
+};
+
 export class Connection {
     state: ConnectionState = ConnectionState.CONNECTING;
     capabilities: number = 0;
@@ -42,6 +49,7 @@ export class Connection {
             const error = parseError(receive.body, this);
             log.error(`connect error(${error.code}): ${error.message}`);
             this.close();
+            throw new Error(error.message);
         } else {
             log.info(`connected to ${this.client.config.hostname}`);
             this.state = ConnectionState.CONNECTED;
@@ -51,7 +59,14 @@ export class Connection {
     private async nextPacket(): Promise<ReceivePacket> {
         while (true) {
             const packet = await new ReceivePacket().parse(this.conn);
-            if (packet) return packet;
+            if (packet) {
+                if (packet.type === "ERR") {
+                    packet.body.skip(1);
+                    const error = parseError(packet.body, this);
+                    throw new Error(error.message);
+                }
+                return packet
+            };
         }
     }
 
@@ -61,16 +76,27 @@ export class Connection {
         this.state = ConnectionState.CLOSED;
     }
 
-    async query(sql: string, params?: any[]): Promise<any[]> {
+    async query(sql: string, params?: any[]): Promise<ExecuteResult | any[]> {
+        const result = await this.execute(sql, params);
+        if (result && result.rows) {
+            return result.rows;
+        } else {
+            return result;
+        }
+    }
+
+    async execute(sql: string, params?: any[]): Promise<ExecuteResult> {
         const data = buildQuery(sql, params);
         await new SendPacket(data, 0).send(this.conn);
         let receive = await this.nextPacket();
-        let fieldCount = receive.body.readEncodedLen();
-        if (fieldCount === 0xff) {
-            const error = parseError(receive.body, this);
-            log.error(`connect error(${error.code}): ${error.message}`);
-            throw new Error(error.message);
+        if (receive.type === "OK") {
+            receive.body.skip(1);
+            return {
+                affectedRows: receive.body.readEncodedLen(),
+                lastInsertId: receive.body.readEncodedLen(),
+            };
         }
+        let fieldCount = receive.body.readEncodedLen();
         const fields: FieldInfo[] = [];
         while (fieldCount--) {
             const packet = await this.nextPacket();
@@ -88,6 +114,6 @@ export class Connection {
                 rows.push(row);
             }
         }
-        return rows;
+        return { rows, fields };
     }
 }

@@ -1,4 +1,4 @@
-import { Connection } from "./connection.ts";
+import { Connection, ExecuteResult } from "./connection.ts";
 import { config as logConfig } from "./logger.ts";
 
 export interface ClientConfig {
@@ -30,7 +30,11 @@ export class Client {
         return this;
     }
 
-    async query(sql: string, params?: any[]): Promise<any[]> {
+    async query(sql: string, params?: any[]): Promise<any> {
         return await this.connection.query(sql, params);
+    }
+
+    async execute(sql: string, params?: any[]): Promise<ExecuteResult> {
+        return await this.connection.execute(sql, params);
     }
 }
