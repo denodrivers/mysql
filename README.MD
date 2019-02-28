@@ -22,7 +22,7 @@ Still under development.
 
 ### connet
 ```ts
-import { Client } from "https://raw.githubusercontent.com/manyuanrong/deno_mysql/master/mod.ts";
+import { Client } from "https://deno.land/x/mysql/mod.ts";
 const client = await new Client().connect({
     hostname: "127.0.0.1",
     username: "root",

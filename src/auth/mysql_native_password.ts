@@ -1,5 +1,5 @@
 import { encode } from "https://deno.land/x/std/strings/strings.ts";
-import { Hash } from "https://raw.githubusercontent.com/manyuanrong/deno-crypto/master/mod.ts";
+import { Hash } from "https://deno.land/x/checksum/mod.ts";
 
 export function auth(password: string, seed: Uint8Array): Uint8Array {
   const hash = new Hash("sha1");
