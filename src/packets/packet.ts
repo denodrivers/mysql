@@ -1,5 +1,5 @@
 import { Conn, Reader } from "deno";
-import { byteFormat } from "../../modules.ts";
+import { byteFormat } from "../../deps.ts";
 import { BufferReader, BufferWriter } from "../buffer.ts";
 import { log, debug } from "../logger.ts";
 

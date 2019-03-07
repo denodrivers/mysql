@@ -1,4 +1,4 @@
-import { encode } from "../../../modules.ts";
+import { encode } from "../../../deps.ts";
 import { BufferWriter } from "../../buffer.ts";
 
 export function buildQuery(sql: string, params: any[] = []): Uint8Array {

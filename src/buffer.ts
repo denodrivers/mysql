@@ -1,4 +1,4 @@
-import { decode, encode, byteFormat } from "../modules.ts";
+import { decode, encode, byteFormat } from "../deps.ts";
 
 export class BufferReader {
     private pos: number = 0;
