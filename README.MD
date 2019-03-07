@@ -1,8 +1,12 @@
-# deno_mysql [![Build Status](https://www.travis-ci.org/manyuanrong/deno_mysql.svg?branch=master)](https://www.travis-ci.org/manyuanrong/deno_mysql)
+# deno_mysql
+
+[![Build Status](https://www.travis-ci.org/manyuanrong/deno_mysql.svg?branch=master)](https://www.travis-ci.org/manyuanrong/deno_mysql)
 
 MySQL database driver for Deno.
 
 Still under development.
+
+On this basis, there is also an ORM library: [Deno Simple Orm](https://github.com/manyuanrong/dso)
 
 欢迎国内的小伙伴加我专门建的Deno QQ交流群：698469316
 
