@@ -1,4 +1,4 @@
-import { equal } from "https://deno.land/x/testing/asserts.ts";
+import { assertEquals } from "https://deno.land/x/testing/asserts.ts";
 import { runTests, test } from "https://deno.land/x/testing/mod.ts";
 import { Client } from "./mod.ts";
 import "./tests/query.ts";
@@ -24,27 +24,32 @@ test(async function testCreateTable() {
 
 test(async function testInsert() {
     let result = await client.execute(`INSERT INTO users(name) values(?)`, ["manyuanrong"]);
-    equal(result, { affectedRows: 1, lastInsertId: 1 });
+    assertEquals(result, { affectedRows: 1, lastInsertId: 1 });
+    result = await client.execute(
+        `INSERT INTO users ?? values ?`,
+        [["id", "name"], [2, "MySQL"]]
+    );
+    assertEquals(result, { affectedRows: 1, lastInsertId: 2 });
 });
 
 test(async function testUpdate() {
-    let result = await client.execute(`update users set ?? = ?`, ["name", "MYR"]);
-    equal(result, { affectedRows: 1, lastInsertId: 0 });
+    let result = await client.execute(`update users set ?? = ? WHERE id = ?`, ["name", "MYR", 1]);
+    assertEquals(result, { affectedRows: 1, lastInsertId: 0 });
 });
 
 test(async function testQuery() {
     let result = await client.query("select ??,name from ?? where id = ?", ["id", "users", 1]);
-    equal(result, [{ id: 1, name: "MYR" }]);
+    assertEquals(result, [{ id: 1, name: "MYR" }]);
 });
 
 test(async function testDelete() {
     let result = await client.execute(`delete from users where ?? = ?`, ["id", 1]);
-    equal(result, { affectedRows: 1, lastInsertId: 0 });
+    assertEquals(result, { affectedRows: 1, lastInsertId: 0 });
 });
 
 async function main() {
     client = await new Client().connect({
-        debug: false,
+        debug: true,
         hostname: "127.0.0.1",
         username: "root",
         db: "",

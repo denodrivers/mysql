@@ -14,7 +14,12 @@ export function replaceParams(sql: string, params: any[]): string {
     sql = sql.replace(/(\?\?)|(\?)/g, (str) => {
         // identifier
         if (str === "??") {
-            return ["`", params[paramIndex++], "`"].join("");
+            const val = params[paramIndex++];
+            if (val instanceof Array) {
+                return `(${val.map(item => replaceParams("??", [item])).join(",")})`;
+            } else {
+                return ["`", val, "`"].join("");
+            }
         }
         // value
         const val = params[paramIndex++];
