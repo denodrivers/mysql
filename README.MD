@@ -24,7 +24,7 @@ On this basis, there is also an ORM library: [Deno Simple Orm](https://github.co
 
 ## API
 
-### connet
+### connect
 ```ts
 import { Client } from "https://deno.land/x/mysql/mod.ts";
 const client = await new Client().connect({
