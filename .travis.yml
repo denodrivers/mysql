@@ -1,6 +1,7 @@
 services:
   - mysql
 
+
 before_install:
   - curl -fsSL https://deno.land/x/install/install.sh | sh
   - export PATH="/home/travis/.deno/bin:$PATH"
