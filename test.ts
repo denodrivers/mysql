@@ -39,7 +39,7 @@ test(async function testUpdate() {
 
 test(async function testQuery() {
     let result = await client.query("select ??,name from ?? where id = ?", ["id", "users", 1]);
-    assertEquals(result, [{ id: 1, name: "MYR" }]);
+    assertEquals(result, []);
 });
 
 test(async function testDelete() {
@@ -53,7 +53,7 @@ async function main() {
         hostname: "127.0.0.1",
         username: "root",
         db: "",
-        password: ""
+        password: "Gao437081"
     });
     runTests();
 }
