@@ -104,7 +104,6 @@ export class Connection {
             const field = parseField(packet.body);
             fields.push(field);
         }
-        await this.nextPacket(); // EOF
         const rows = [];
         while (true) {
             receive = await this.nextPacket();

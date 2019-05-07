@@ -39,8 +39,8 @@ test(async function testUpdate() {
 });
 
 test(async function testQuery() {
-    let result = await client.query("select ??,name from ?? where id = ?", ["id", "users", 1]);
-    assertEquals(result, []);
+    let result = await client.query("select ??,name from ?? where id = ?", ["id", "users", 2]);
+    assertEquals(result, [{'id':2,'name':'MySQL'}]);
 });
 
 test(async function testDelete() {
