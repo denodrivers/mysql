@@ -1,4 +1,3 @@
-import { Conn, dial } from "deno";
 import { Client } from "./client.ts";
 import { log } from "./logger.ts";
 import { buildAuth } from "./packets/builders/auth.ts";
@@ -7,6 +6,8 @@ import { ReceivePacket, SendPacket } from "./packets/packet.ts";
 import { parseError } from "./packets/parsers/err.ts";
 import { parseHandshake } from "./packets/parsers/handshake.ts";
 import { FieldInfo, parseField, parseRow } from "./packets/parsers/result.ts";
+
+const { dial } = Deno;
 
 enum ConnectionState {
     CONNECTING, CONNECTED, COLSING, CLOSED
@@ -23,7 +24,7 @@ export class Connection {
     state: ConnectionState = ConnectionState.CONNECTING;
     capabilities: number = 0;
 
-    private conn: Conn;
+    private conn: Deno.Conn;
 
     constructor(readonly client: Client) { }
 

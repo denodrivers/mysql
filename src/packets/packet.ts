@@ -1,4 +1,3 @@
-import { Conn, Reader } from "deno";
 import { byteFormat } from "../../deps.ts";
 import { BufferReader, BufferWriter } from "../buffer.ts";
 import { log, debug } from "../logger.ts";
@@ -15,7 +14,7 @@ export class SendPacket {
         this.header = { size: body.length, no };
     }
 
-    async send(conn: Conn) {
+    async send(conn: Deno.Conn) {
         const body = this.body as Uint8Array;
         const data = new BufferWriter(new Uint8Array(4 + body.length));
         data.writeUints(3, this.header.size);
@@ -31,7 +30,7 @@ export class ReceivePacket {
     body: BufferReader;
     type: "EOF" | "OK" | "ERR" | "RESULT"
 
-    async parse(reader: Reader): Promise<ReceivePacket> {
+    async parse(reader: Deno.Reader): Promise<ReceivePacket> {
         const header = new BufferReader(new Uint8Array(4));
         const result = await reader.read(header.buffer);
         if (!result.nread) return null;
