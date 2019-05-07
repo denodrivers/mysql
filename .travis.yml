@@ -7,4 +7,4 @@ before_install:
   - export PATH="/home/travis/.deno/bin:$PATH"
   
 script:
-  - deno run ./test.ts --allow-all
+  - deno run --allow-all ./test.ts
