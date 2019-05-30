@@ -7,6 +7,8 @@ import { parseError } from "./packets/parsers/err.ts";
 import { parseHandshake } from "./packets/parsers/handshake.ts";
 import { FieldInfo, parseField, parseRow } from "./packets/parsers/result.ts";
 
+const { dial } = Deno;
+
 enum ConnectionState {
     CONNECTING, CONNECTED, COLSING, CLOSED
 };
