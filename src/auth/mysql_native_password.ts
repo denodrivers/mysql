@@ -1,4 +1,4 @@
-import { encode } from "https://deno.land/x/std/strings/strings.ts";
+import { encode } from "../../deps.ts";
 import { Hash } from "https://deno.land/x/checksum/mod.ts";
 
 export function auth(password: string, seed: Uint8Array): Uint8Array {

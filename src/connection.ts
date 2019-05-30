@@ -1,4 +1,3 @@
-import { Conn, dial } from "deno";
 import { Client } from "./client.ts";
 import { log } from "./logger.ts";
 import { buildAuth } from "./packets/builders/auth.ts";
@@ -23,13 +22,13 @@ export class Connection {
     state: ConnectionState = ConnectionState.CONNECTING;
     capabilities: number = 0;
 
-    private conn: Conn;
+    private conn: Deno.Conn;
 
     constructor(readonly client: Client) { }
 
     async connect() {
         const { hostname, port } = this.client.config;
-        this.conn = await dial("tcp", `${hostname}:${port}`);
+        this.conn = await Deno.dial("tcp", `${hostname}:${port}`);
         log.info(`connecting ${hostname}`);
 
         let receive = await this.nextPacket();
@@ -103,8 +102,13 @@ export class Connection {
             const field = parseField(packet.body);
             fields.push(field);
         }
-        await this.nextPacket(); // EOF
+
         const rows = [];
+        receive = await this.nextPacket(); // EOF(less than 5.7)
+        if (receive.type == "RESULT") {
+            const row = parseRow(receive.body, fields);
+            rows.push(row);
+        }
         while (true) {
             receive = await this.nextPacket();
             if (receive.type === "EOF") {
