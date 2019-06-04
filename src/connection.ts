@@ -28,8 +28,8 @@ export class Connection {
 
     async connect() {
         const { hostname, port } = this.client.config;
+        log.info(`connecting ${hostname}:${port}`);
         this.conn = await Deno.dial("tcp", `${hostname}:${port}`);
-        log.info(`connecting ${hostname}`);
 
         let receive = await this.nextPacket();
         const handshakePacket = parseHandshake(receive.body);

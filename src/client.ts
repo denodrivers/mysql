@@ -15,7 +15,7 @@ export class Client {
     private connection: Connection;
 
     async connect(config: ClientConfig): Promise<Client> {
-        logConfig({
+        await logConfig({
             debug: config.debug,
             logFile: "mysql.log",
         });

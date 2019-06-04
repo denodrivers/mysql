@@ -1,10 +1,25 @@
 services:
-  - mysql
+  - docker
 
+matrix:
+  fast-finish: true
+  include:
+    - env:
+      - DB_VERSION: 5.5
+    - env:
+      - DB_VERSION: 5.6
+    - env:
+      - DB_VERSION: 5.7
+    - env:
+      - DB_VERSION: 8
+    - env:
+      - DB_VERSION: latest
 
 before_install:
   - curl -fsSL https://deno.land/x/install/install.sh | sh
   - export PATH="/home/travis/.deno/bin:$PATH"
   
 script:
+  - docker run -d -p $DB_PORT:3306 -e MYSQL_ALLOW_EMPTY_PASSWORD=true mysql:$DB_VERSION
+  - sleep 10
   - deno run --allow-all ./test.ts

@@ -9,14 +9,14 @@ export function debug(fun: Function) {
     }
 }
 
-export function config(
+export async function config(
     config: {
         debug: boolean;
         logFile: string;
     }
 ) {
     isDebug = config.debug;
-    log.setup({
+    await log.setup({
         handlers: {
             console: new log.handlers.ConsoleHandler(config.debug ? "DEBUG" : "INFO"),
             file: new log.handlers.FileHandler("WARNING", {
