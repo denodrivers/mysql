@@ -1,6 +1,6 @@
 package-lock.json
-package.json
 tsconfig.json
 .vscode
 node_modules
 mysql.log
+docs
