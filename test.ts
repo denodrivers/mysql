@@ -68,6 +68,7 @@ async function main() {
   const username = DB_USER || "root";
   const hostname = DB_HOST || "127.0.0.1";
   client = await new Client().connect({
+    timeout: 10000,
     debug: true,
     hostname,
     username,

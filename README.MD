@@ -13,6 +13,8 @@ On this basis, there is also an ORM library: [Deno Simple Orm](https://github.co
 ## TODO
 
 - [x] Connecting to database
+  - [x] Retring
+  - [x] Timeout 
 - [x] Basic login authentication
 - [x] Simple queries (no arguments)
 - [x] Parsing data types
