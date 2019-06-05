@@ -2,6 +2,7 @@ import { assertEquals } from "https://deno.land/x/testing/asserts.ts";
 import { runTests, test } from "https://deno.land/x/testing/mod.ts";
 import { Client } from "./mod.ts";
 import "./tests/query.ts";
+import { ConnectionState } from "./src/connection.ts";
 
 let client: Client;
 
@@ -52,12 +53,24 @@ test(async function testQuery() {
   assertEquals(result, [{ id: 1, name: "MYR" }]);
 });
 
+test(async function testQueryList() {
+  const sql = "select ??,?? from ??";
+  let result = await client.query(sql, ["id", "name", "users"]);
+  assertEquals(result, [{ id: 1, name: "MYR" }, { id: 2, name: "MySQL" }]);
+});
+
 test(async function testDelete() {
   let result = await client.execute(`delete from users where ?? = ?`, [
     "id",
     1
   ]);
   assertEquals(result, { affectedRows: 1, lastInsertId: 0 });
+});
+
+test(async function testCloseConnction() {
+  assertEquals(client.connection.state, ConnectionState.CONNECTED);
+  await client.close();
+  assertEquals(client.connection.state, ConnectionState.CLOSED);
 });
 
 async function main() {

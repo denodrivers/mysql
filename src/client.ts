@@ -30,7 +30,7 @@ export interface ClientConfig {
  */
 export class Client {
   config: ClientConfig;
-  private connection: Connection;
+  connection: Connection;
 
   /**
    * connect to database
@@ -69,5 +69,12 @@ export class Client {
    */
   async execute(sql: string, params?: any[]): Promise<ExecuteResult> {
     return await this.connection.execute(sql, params);
+  }
+
+  /**
+   * close connection
+   */
+  async close() {
+    await this.connection.close();
   }
 }

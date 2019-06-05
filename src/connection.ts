@@ -10,7 +10,7 @@ import { FieldInfo, parseField, parseRow } from "./packets/parsers/result.ts";
 /**
  * Connection state
  */
-enum ConnectionState {
+export enum ConnectionState {
   CONNECTING,
   CONNECTED,
   COLSING,

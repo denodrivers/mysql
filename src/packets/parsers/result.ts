@@ -1,7 +1,3 @@
-/**
- * @ignore
- */
-
 import { BufferReader } from "../../buffer.ts";
 import {
   MYSQL_TYPE_DECIMAL,
