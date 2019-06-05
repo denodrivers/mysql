@@ -2,13 +2,11 @@ import { assertEquals } from "https://deno.land/x/testing/asserts.ts";
 import { runTests, test } from "https://deno.land/x/testing/mod.ts";
 import { Client } from "./mod.ts";
 import "./tests/query.ts";
-import { ConnectionState } from "./src/connection.ts";
 
 let client: Client;
 
 test(async function testCreateDb() {
   await client.query(`CREATE DATABASE IF NOT EXISTS enok`);
-  await client.query(`USE enok`);
 });
 
 test(async function testCreateTable() {
@@ -67,29 +65,42 @@ test(async function testDelete() {
   assertEquals(result, { affectedRows: 1, lastInsertId: 0 });
 });
 
-test(async function testCloseConnction() {
-  assertEquals(client.connection.state, ConnectionState.CONNECTED);
-  await client.close();
-  assertEquals(client.connection.state, ConnectionState.CLOSED);
+test(async function testPool() {
+  assertEquals(1, client.connections.length);
+  const expect = new Array(10).fill([
+    {
+      "1": 1
+    }
+  ]);
+  const result = await Promise.all(expect.map(() => client.query(`select 1`)));
+  assertEquals(client.config.pool, client.connections.length);
+  assertEquals(result, expect);
 });
 
 async function main() {
   const { DB_PORT, DB_NAME, DB_PASSWORD, DB_USER, DB_HOST } = Deno.env();
   const port = DB_PORT ? parseInt(DB_PORT) : 3306;
-  const db = DB_NAME;
+  const db = DB_NAME || "test";
   const password = DB_PASSWORD;
   const username = DB_USER || "root";
   const hostname = DB_HOST || "127.0.0.1";
-  client = await new Client().connect({
+
+  const config = {
     timeout: 10000,
-    debug: true,
+    pool: 3,
+    debug: false,
     hostname,
     username,
     port,
     db,
     password
-  });
-  runTests();
+  };
+  client = await new Client().connect({ ...config, pool: 1, db: null });
+  await client.execute(`CREATE DATABASE IF NOT EXISTS ${db}`);
+  await client.close();
+  client = await new Client().connect(config);
+  await runTests();
+  console.log("end");
 }
 
 main();

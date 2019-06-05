@@ -1,4 +1,5 @@
 import { Connection, ExecuteResult } from "./connection.ts";
+import { DeferredStack } from "./deferred.ts";
 import { config as logConfig } from "./logger.ts";
 
 /**
@@ -23,6 +24,8 @@ export interface ClientConfig {
   reconnect?: boolean;
   /** Number of retries that failed in the link process */
   retry?: number;
+  /** Connection pool size default 1 */
+  pool?: number;
 }
 
 /**
@@ -30,7 +33,14 @@ export interface ClientConfig {
  */
 export class Client {
   config: ClientConfig;
-  connection: Connection;
+  connections: DeferredStack<Connection>;
+  private _connections: Connection[] = [];
+
+  private async getConnection(): Promise<Connection> {
+    let connection: Connection = new Connection(this);
+    await connection.connect();
+    return connection;
+  }
 
   /**
    * connect to database
@@ -46,10 +56,15 @@ export class Client {
       hostname: "127.0.0.1",
       username: "root",
       port: 3306,
+      pool: 1,
       ...config
     };
-    this.connection = new Connection(this);
-    await this.connection.connect();
+    this._connections = [];
+    this.connections = new DeferredStack<Connection>(
+      this.config.pool,
+      this._connections,
+      this.getConnection.bind(this)
+    );
     return this;
   }
 
@@ -59,7 +74,10 @@ export class Client {
    * @param params query params
    */
   async query(sql: string, params?: any[]): Promise<any> {
-    return await this.connection.query(sql, params);
+    const connection = await this.connections.pop();
+    const result = await connection.query(sql, params);
+    this.connections.push(connection);
+    return result;
   }
 
   /**
@@ -68,13 +86,16 @@ export class Client {
    * @param params query params
    */
   async execute(sql: string, params?: any[]): Promise<ExecuteResult> {
-    return await this.connection.execute(sql, params);
+    const connection = await this.connections.pop();
+    const result = await connection.execute(sql, params);
+    this.connections.push(connection);
+    return result;
   }
 
   /**
    * close connection
    */
   async close() {
-    await this.connection.close();
+    await Promise.all(this._connections.map(conn => conn.close()));
   }
 }

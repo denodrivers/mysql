@@ -95,7 +95,7 @@ export class Connection {
   }
 
   private async nextPacket(): Promise<ReceivePacket> {
-    while (true) {
+    while (this.conn) {
       const packet = await new ReceivePacket().parse(this.conn);
       if (packet) {
         if (packet.type === "ERR") {
