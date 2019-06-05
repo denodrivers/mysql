@@ -5,21 +5,38 @@ import { config as logConfig } from "./logger.ts";
  * Clinet Config
  */
 export interface ClientConfig {
+  /** Database hostname */
   hostname?: string;
+  /** Database username */
   username?: string;
+  /** Database password */
   password?: string;
+  /** Database port */
   port?: number;
+  /** Database name */
   db?: string;
+  /** Whether to Display Packet Debugging Information */
   debug?: boolean;
+  /** Connect timeout */
   timeout?: number;
+  /** TODO: auto reconnect */
   reconnect?: boolean;
+  /** Number of retries that failed in the link process */
   retry?: number;
 }
 
+/**
+ * MySQL client
+ */
 export class Client {
   config: ClientConfig;
   private connection: Connection;
 
+  /**
+   * connect to database
+   * @param config config for client
+   * @returns Clinet instance
+   */
   async connect(config: ClientConfig): Promise<Client> {
     await logConfig({
       debug: config.debug,
@@ -36,10 +53,20 @@ export class Client {
     return this;
   }
 
+  /**
+   * excute query sql
+   * @param sql query sql string
+   * @param params query params
+   */
   async query(sql: string, params?: any[]): Promise<any> {
     return await this.connection.query(sql, params);
   }
 
+  /**
+   * excute sql
+   * @param sql sql string
+   * @param params query params
+   */
   async execute(sql: string, params?: any[]): Promise<ExecuteResult> {
     return await this.connection.execute(sql, params);
   }

@@ -7,6 +7,9 @@ import { parseError } from "./packets/parsers/err.ts";
 import { parseHandshake } from "./packets/parsers/handshake.ts";
 import { FieldInfo, parseField, parseRow } from "./packets/parsers/result.ts";
 
+/**
+ * Connection state
+ */
 enum ConnectionState {
   CONNECTING,
   CONNECTED,
@@ -14,6 +17,9 @@ enum ConnectionState {
   CLOSED
 }
 
+/**
+ * Result for excute sql
+ */
 export type ExecuteResult = {
   affectedRows?: number;
   lastInsertId?: number;
@@ -21,6 +27,7 @@ export type ExecuteResult = {
   rows?: any[];
 };
 
+/** Connection for mysql */
 export class Connection {
   state: ConnectionState = ConnectionState.CONNECTING;
   capabilities: number = 0;
@@ -29,7 +36,7 @@ export class Connection {
 
   constructor(readonly client: Client) {}
 
-  async _connect() {
+  private async _connect() {
     const { hostname, port } = this.client.config;
     log.info(`connecting ${hostname}:${port}`);
     this.conn = await Deno.dial("tcp", `${hostname}:${port}`);
@@ -58,6 +65,7 @@ export class Connection {
     }
   }
 
+  /** Connect to database */
   async connect(): Promise<void> {
     let { retry = 3, timeout = 10000 } = this.client.config;
     let timer = 0;
@@ -100,6 +108,7 @@ export class Connection {
     }
   }
 
+  /** Close database connection */
   close(): void {
     log.info("close connection");
     this.state = ConnectionState.COLSING;
@@ -107,6 +116,11 @@ export class Connection {
     this.state = ConnectionState.CLOSED;
   }
 
+  /**
+   * excute query sql
+   * @param sql query sql string
+   * @param params query params
+   */
   async query(sql: string, params?: any[]): Promise<ExecuteResult | any[]> {
     const result = await this.execute(sql, params);
     if (result && result.rows) {
@@ -116,6 +130,11 @@ export class Connection {
     }
   }
 
+  /**
+   * excute sql
+   * @param sql sql string
+   * @param params query params
+   */
   async execute(sql: string, params?: any[]): Promise<ExecuteResult> {
     const data = buildQuery(sql, params);
     await new SendPacket(data, 0).send(this.conn);

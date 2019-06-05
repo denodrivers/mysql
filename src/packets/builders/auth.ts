@@ -1,72 +1,66 @@
 import { BufferWriter } from "../../buffer.ts";
-import {
-    CLIENT_CONNECT_WITH_DB,
-    CLIENT_PLUGIN_AUTH,
-    CLIENT_LONG_PASSWORD,
-    CLIENT_PROTOCOL_41,
-    CLIENT_TRANSACTIONS,
-    CLIENT_MULTI_RESULTS,
-    CLIENT_SECURE_CONNECTION,
-    CLIENT_LONG_FLAG,
-    CLIENT_PLUGIN_AUTH_LENENC_CLIENT_DATA,
-    CLIENT_DEPRECATE_EOF
-} from "../../consttants/capabilities.ts";
-import { UTF8_GENERAL_CI } from "../../consttants/charset.ts";
+import ServerCapabilities from "../../consttants/capabilities.ts";
 import { auth } from "../../auth/mysql_native_password.ts";
 import { HandshakeBody } from "../parsers/handshake.ts";
+import { Charset } from "../../consttants/charset.ts";
 
+/** @ignore */
 export function buildAuth(
-    packet: HandshakeBody,
-    params: { username: string; password: string; db: string }
+  packet: HandshakeBody,
+  params: { username: string; password: string; db: string }
 ): Uint8Array {
-    let clientParam: number =
-        (params.db ? CLIENT_CONNECT_WITH_DB : 0) |
-        CLIENT_PLUGIN_AUTH |
-        CLIENT_LONG_PASSWORD |
-        CLIENT_PROTOCOL_41 |
-        CLIENT_TRANSACTIONS |
-        CLIENT_MULTI_RESULTS |
-        CLIENT_SECURE_CONNECTION;
+  let clientParam: number =
+    (params.db ? ServerCapabilities.CLIENT_CONNECT_WITH_DB : 0) |
+    ServerCapabilities.CLIENT_PLUGIN_AUTH |
+    ServerCapabilities.CLIENT_LONG_PASSWORD |
+    ServerCapabilities.CLIENT_PROTOCOL_41 |
+    ServerCapabilities.CLIENT_TRANSACTIONS |
+    ServerCapabilities.CLIENT_MULTI_RESULTS |
+    ServerCapabilities.CLIENT_SECURE_CONNECTION;
 
-    if (packet.serverCapabilities & CLIENT_LONG_FLAG) {
-        clientParam |= CLIENT_LONG_FLAG;
+  if (packet.serverCapabilities & ServerCapabilities.CLIENT_LONG_FLAG) {
+    clientParam |= ServerCapabilities.CLIENT_LONG_FLAG;
+  }
+  if (
+    packet.serverCapabilities &
+    ServerCapabilities.CLIENT_PLUGIN_AUTH_LENENC_CLIENT_DATA
+  ) {
+    clientParam |= ServerCapabilities.CLIENT_PLUGIN_AUTH_LENENC_CLIENT_DATA;
+  }
+  if (packet.serverCapabilities & ServerCapabilities.CLIENT_DEPRECATE_EOF) {
+    clientParam |= ServerCapabilities.CLIENT_DEPRECATE_EOF;
+  }
+  if (packet.serverCapabilities & ServerCapabilities.CLIENT_PLUGIN_AUTH) {
+    const writer = new BufferWriter(new Uint8Array(1000));
+    writer
+      .writeUint32(clientParam)
+      .writeUint32(265 * 256 * 256 - 1)
+      .write(Charset.UTF8_GENERAL_CI)
+      .skip(23)
+      .writeNullTerminatedString(params.username);
+    if (params.password) {
+      const authData = auth(params.password, packet.seed);
+      if (
+        clientParam &
+          ServerCapabilities.CLIENT_PLUGIN_AUTH_LENENC_CLIENT_DATA ||
+        clientParam & ServerCapabilities.CLIENT_SECURE_CONNECTION
+      ) {
+        // request lenenc-int length of auth-response and string[n] auth-response
+        writer.write(authData.length);
+        writer.writeBuffer(authData);
+      } else {
+        writer.writeBuffer(authData);
+        writer.write(0);
+      }
+    } else {
+      writer.write(0);
     }
-    if (packet.serverCapabilities & CLIENT_PLUGIN_AUTH_LENENC_CLIENT_DATA) {
-        clientParam |= CLIENT_PLUGIN_AUTH_LENENC_CLIENT_DATA;
+    if (clientParam & ServerCapabilities.CLIENT_CONNECT_WITH_DB) {
+      writer.writeNullTerminatedString(params.db);
     }
-    if (packet.serverCapabilities & CLIENT_DEPRECATE_EOF) {
-        clientParam |= CLIENT_DEPRECATE_EOF;
+    if (clientParam & ServerCapabilities.CLIENT_PLUGIN_AUTH) {
+      writer.writeNullTerminatedString(packet.authPluginName);
     }
-    if (packet.serverCapabilities & CLIENT_PLUGIN_AUTH) {
-        const writer = new BufferWriter(new Uint8Array(1000));
-        writer
-            .writeUint32(clientParam)
-            .writeUint32(265 * 256 * 256 - 1)
-            .write(UTF8_GENERAL_CI)
-            .skip(23)
-            .writeNullTerminatedString(params.username);
-        if (params.password) {
-            const authData = auth(params.password, packet.seed);
-            if (
-                clientParam & CLIENT_PLUGIN_AUTH_LENENC_CLIENT_DATA ||
-                clientParam & CLIENT_SECURE_CONNECTION
-            ) {
-                // request lenenc-int length of auth-response and string[n] auth-response
-                writer.write(authData.length);
-                writer.writeBuffer(authData);
-            } else {
-                writer.writeBuffer(authData);
-                writer.write(0);
-            }
-        } else {
-            writer.write(0);
-        }
-        if (clientParam & CLIENT_CONNECT_WITH_DB) {
-            writer.writeNullTerminatedString(params.db);
-        }
-        if (clientParam & CLIENT_PLUGIN_AUTH) {
-            writer.writeNullTerminatedString(packet.authPluginName);
-        }
-        return writer.wroteData;
-    }
+    return writer.wroteData;
+  }
 }

@@ -2,11 +2,13 @@ import { byteFormat } from "../../deps.ts";
 import { BufferReader, BufferWriter } from "../buffer.ts";
 import { log, debug } from "../logger.ts";
 
+/** @ignore */
 interface PacketHeader {
   size: number;
   no: number;
 }
 
+/** @ignore */
 export class SendPacket {
   header: PacketHeader;
 
@@ -25,6 +27,7 @@ export class SendPacket {
   }
 }
 
+/** @ignore */
 export class ReceivePacket {
   header: PacketHeader;
   body: BufferReader;

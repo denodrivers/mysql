@@ -1,6 +1,7 @@
 import { encode } from "../../deps.ts";
 import { Hash } from "https://deno.land/x/checksum@1.0.0/mod.ts";
 
+/** @ignore */
 export function auth(password: string, seed: Uint8Array): Uint8Array {
   const hash = new Hash("sha1");
   const pwd1 = hash.digest(encode(password)).data;
