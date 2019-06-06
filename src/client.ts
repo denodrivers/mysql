@@ -1,6 +1,6 @@
 import { Connection, ExecuteResult } from "./connection.ts";
 import { DeferredStack } from "./deferred.ts";
-import { config as logConfig } from "./logger.ts";
+import { config as logConfig, log } from "./logger.ts";
 
 /**
  * Clinet Config
@@ -26,6 +26,11 @@ export interface ClientConfig {
   retry?: number;
   /** Connection pool size default 1 */
   pool?: number;
+}
+
+/** Transaction processor */
+export interface TransactionProcessor<T> {
+  (connection: Connection): Promise<T>;
 }
 
 /**
@@ -69,6 +74,7 @@ export class Client {
       pool: 1,
       ...config
     };
+    Object.freeze(this.config);
     this._connections = [];
     this._pool = new DeferredStack<Connection>(
       this.config.pool,
@@ -100,6 +106,26 @@ export class Client {
     const result = await connection.execute(sql, params);
     this._pool.push(connection);
     return result;
+  }
+
+  /**
+   * Execute a transaction process, and the transaction successfully
+   * returns the return value of the transaction process
+   * @param processor transation processor
+   */
+  async transaction<T = any>(processor: TransactionProcessor<T>): Promise<T> {
+    const connection = await this._pool.pop();
+    try {
+      await connection.execute("BEGIN");
+      const result = await processor(connection);
+      await connection.execute("COMMIT");
+      return result;
+    } catch (error) {
+      log.info(`ROLLBACK: ${error.message}`);
+      await connection.execute("ROLLBACK");
+    } finally {
+      this._pool.push(connection);
+    }
   }
 
   /**

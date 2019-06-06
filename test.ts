@@ -79,6 +79,34 @@ test(async function testPool() {
   assertEquals(result, expect);
 });
 
+test(async function testTransactionSuccess() {
+  const success = await client.transaction(async connection => {
+    await connection.execute("insert into users(name) values(?)", [
+      "transaction1"
+    ]);
+    await connection.execute("delete from users where id = ?", [2]);
+    return true;
+  });
+  assertEquals(true, success);
+  const result = await client.query("select name,id from users");
+  console.log(result);
+  assertEquals([{ name: "transaction1", id: 3 }], result);
+});
+
+test(async function testTransactionRollback() {
+  const success = await client.transaction(async connection => {
+    // Insert an existing id
+    await connection.execute("insert into users(name,id) values(?,?)", [
+      "transaction2",
+      3
+    ]);
+    return true;
+  });
+  assertEquals(undefined, success);
+  const result = await client.query("select name from users");
+  assertEquals([{ name: "transaction1" }], result);
+});
+
 async function main() {
   const { DB_PORT, DB_NAME, DB_PASSWORD, DB_USER, DB_HOST } = Deno.env();
   const port = DB_PORT ? parseInt(DB_PORT) : 3306;
