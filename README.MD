@@ -4,8 +4,6 @@
 
 MySQL database driver for Deno.
 
-Still under development.
-
 On this basis, there is also an ORM library: [Deno Simple Orm](https://github.com/manyuanrong/dso)
 
 欢迎国内的小伙伴加我专门建的 Deno QQ 交流群：698469316
