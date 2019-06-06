@@ -33,13 +33,23 @@ export interface ClientConfig {
  */
 export class Client {
   config: ClientConfig;
-  connections: DeferredStack<Connection>;
+  private _pool: DeferredStack<Connection>;
   private _connections: Connection[] = [];
 
-  private async getConnection(): Promise<Connection> {
+  private async createConnection(): Promise<Connection> {
     let connection: Connection = new Connection(this);
     await connection.connect();
     return connection;
+  }
+
+  /** get size of the pool, Number of connections created */
+  get poolSize() {
+    return this._pool.size;
+  }
+
+  /** get length of the pool, Number of connections available */
+  get poolLength() {
+    return this._pool.length;
   }
 
   /**
@@ -60,10 +70,10 @@ export class Client {
       ...config
     };
     this._connections = [];
-    this.connections = new DeferredStack<Connection>(
+    this._pool = new DeferredStack<Connection>(
       this.config.pool,
       this._connections,
-      this.getConnection.bind(this)
+      this.createConnection.bind(this)
     );
     return this;
   }
@@ -74,9 +84,9 @@ export class Client {
    * @param params query params
    */
   async query(sql: string, params?: any[]): Promise<any> {
-    const connection = await this.connections.pop();
+    const connection = await this._pool.pop();
     const result = await connection.query(sql, params);
-    this.connections.push(connection);
+    this._pool.push(connection);
     return result;
   }
 
@@ -86,9 +96,9 @@ export class Client {
    * @param params query params
    */
   async execute(sql: string, params?: any[]): Promise<ExecuteResult> {
-    const connection = await this.connections.pop();
+    const connection = await this._pool.pop();
     const result = await connection.execute(sql, params);
-    this.connections.push(connection);
+    this._pool.push(connection);
     return result;
   }
 

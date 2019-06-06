@@ -66,14 +66,16 @@ test(async function testDelete() {
 });
 
 test(async function testPool() {
-  assertEquals(1, client.connections.length);
+  assertEquals(1, client.poolLength);
+  assertEquals(1, client.poolSize);
   const expect = new Array(10).fill([
     {
       "1": 1
     }
   ]);
   const result = await Promise.all(expect.map(() => client.query(`select 1`)));
-  assertEquals(client.config.pool, client.connections.length);
+  assertEquals(client.config.pool, client.poolLength);
+  assertEquals(client.config.pool, client.poolSize);
   assertEquals(result, expect);
 });
 
