@@ -76,6 +76,7 @@ export class Connection {
           new Promise(
             (_, reject) =>
               (timer = setTimeout(() => {
+                this.conn && this.conn.close();
                 reject(new Error("connect timeout"));
               }, timeout))
           )

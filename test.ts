@@ -89,7 +89,6 @@ test(async function testTransactionSuccess() {
   });
   assertEquals(true, success);
   const result = await client.query("select name,id from users");
-  console.log(result);
   assertEquals([{ name: "transaction1", id: 3 }], result);
 });
 
