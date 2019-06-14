@@ -1,7 +1,6 @@
-import { assertEquals } from "https://deno.land/x/testing/asserts.ts";
+import { assertEquals, assertThrowsAsync } from "https://deno.land/x/testing/asserts.ts";
 import { runTests, test } from "https://deno.land/x/testing/mod.ts";
 import { Client } from "./mod.ts";
-import "./tests/query.ts";
 
 let client: Client;
 
@@ -49,6 +48,16 @@ test(async function testQuery() {
     1
   ]);
   assertEquals(result, [{ id: 1, name: "MYR" }]);
+});
+
+test(async function testQueryErrorOccurred() {
+  assertEquals(1, client.poolSize);
+  await assertThrowsAsync(
+    () => client.query("select unknownfield from `users`"),
+    Error
+  );
+  await client.query("select 1");
+  assertEquals(client.poolSize, 1);
 });
 
 test(async function testQueryList() {

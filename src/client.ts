@@ -91,9 +91,12 @@ export class Client {
    */
   async query(sql: string, params?: any[]): Promise<any> {
     const connection = await this._pool.pop();
-    const result = await connection.query(sql, params);
-    this._pool.push(connection);
-    return result;
+    try {
+      const result = await connection.query(sql, params);
+      return result;
+    } finally {
+      this._pool.push(connection);
+    }
   }
 
   /**
@@ -103,9 +106,12 @@ export class Client {
    */
   async execute(sql: string, params?: any[]): Promise<ExecuteResult> {
     const connection = await this._pool.pop();
-    const result = await connection.execute(sql, params);
-    this._pool.push(connection);
-    return result;
+    try {
+      const result = await connection.execute(sql, params);
+      return result;
+    } finally {
+      this._pool.push(connection);
+    }
   }
 
   /**
