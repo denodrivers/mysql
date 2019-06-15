@@ -1,26 +1,25 @@
 import { BufferReader } from "../../buffer.ts";
 import {
+  MYSQL_TYPE_DATE,
+  MYSQL_TYPE_DATETIME,
+  MYSQL_TYPE_DATETIME2,
   MYSQL_TYPE_DECIMAL,
   MYSQL_TYPE_DOUBLE,
   MYSQL_TYPE_FLOAT,
-  MYSQL_TYPE_DATETIME2,
-  MYSQL_TYPE_NEWDECIMAL,
-  MYSQL_TYPE_TINY,
-  MYSQL_TYPE_SHORT,
+  MYSQL_TYPE_INT24,
   MYSQL_TYPE_LONG,
   MYSQL_TYPE_LONGLONG,
-  MYSQL_TYPE_INT24,
-  MYSQL_TYPE_YEAR,
-  MYSQL_TYPE_VARCHAR,
-  MYSQL_TYPE_VAR_STRING,
-  MYSQL_TYPE_STRING,
-  MYSQL_TYPE_DATE,
-  MYSQL_TYPE_TIMESTAMP,
-  MYSQL_TYPE_TIME,
-  MYSQL_TYPE_DATETIME,
   MYSQL_TYPE_NEWDATE,
+  MYSQL_TYPE_NEWDECIMAL,
+  MYSQL_TYPE_SHORT,
+  MYSQL_TYPE_STRING,
+  MYSQL_TYPE_TIME,
+  MYSQL_TYPE_TIME2,
+  MYSQL_TYPE_TIMESTAMP,
   MYSQL_TYPE_TIMESTAMP2,
-  MYSQL_TYPE_TIME2
+  MYSQL_TYPE_TINY,
+  MYSQL_TYPE_VARCHAR,
+  MYSQL_TYPE_VAR_STRING
 } from "../../consttants/mysql_types.ts";
 
 /** @ignore */
@@ -86,7 +85,7 @@ export function parseRow(reader: BufferReader, fileds: FieldInfo[]): any {
 function convertType(field: FieldInfo, val: string): any {
   const { fieldType, fieldLen } = field;
   if (fieldType === MYSQL_TYPE_TINY && fieldLen === 1) {
-    return !!val;
+    return !!parseInt(val);
   }
   switch (fieldType) {
     case MYSQL_TYPE_DECIMAL:

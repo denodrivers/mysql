@@ -1,4 +1,7 @@
-import { assertEquals, assertThrowsAsync } from "https://deno.land/x/testing/asserts.ts";
+import {
+  assertEquals,
+  assertThrowsAsync
+} from "https://deno.land/x/testing/asserts.ts";
 import { runTests, test } from "https://deno.land/x/testing/mod.ts";
 import { Client } from "./mod.ts";
 
@@ -14,6 +17,7 @@ test(async function testCreateTable() {
         CREATE TABLE users (
             id int(11) NOT NULL AUTO_INCREMENT,
             name varchar(100) NOT NULL,
+            is_top tinyint(1) default 0,
             created_at timestamp not null default current_timestamp,
             PRIMARY KEY (id)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
@@ -42,12 +46,11 @@ test(async function testUpdate() {
 });
 
 test(async function testQuery() {
-  let result = await client.query("select ??,name from ?? where id = ?", [
-    "id",
-    "users",
-    1
-  ]);
-  assertEquals(result, [{ id: 1, name: "MYR" }]);
+  let result = await client.query(
+    "select ??,`is_top`,`name` from ?? where id = ?",
+    ["id", "users", 1]
+  );
+  assertEquals(result, [{ id: 1, name: "MYR", is_top: false }]);
 });
 
 test(async function testQueryErrorOccurred() {
