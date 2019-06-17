@@ -105,13 +105,16 @@ test(async function testTransactionSuccess() {
 });
 
 test(async function testTransactionRollback() {
-  const success = await client.transaction(async connection => {
-    // Insert an existing id
-    await connection.execute("insert into users(name,id) values(?,?)", [
-      "transaction2",
-      3
-    ]);
-    return true;
+  let success;
+  await assertThrowsAsync(async () => {
+    success = await client.transaction(async connection => {
+      // Insert an existing id
+      await connection.execute("insert into users(name,id) values(?,?)", [
+        "transaction2",
+        3
+      ]);
+      return true;
+    });
   });
   assertEquals(undefined, success);
   const result = await client.query("select name from users");

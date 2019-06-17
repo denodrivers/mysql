@@ -129,6 +129,7 @@ export class Client {
     } catch (error) {
       log.info(`ROLLBACK: ${error.message}`);
       await connection.execute("ROLLBACK");
+      throw error;
     } finally {
       this._pool.push(connection);
     }
