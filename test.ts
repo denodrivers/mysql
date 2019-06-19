@@ -1,8 +1,8 @@
 import {
   assertEquals,
   assertThrowsAsync
-} from "https://deno.land/x/testing/asserts.ts";
-import { runTests, test } from "https://deno.land/x/testing/mod.ts";
+} from "https://deno.land/std/testing/asserts.ts";
+import { runTests, test } from "https://deno.land/std/testing/mod.ts";
 import { Client } from "./mod.ts";
 
 let client: Client;
