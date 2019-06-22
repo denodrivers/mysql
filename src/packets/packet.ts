@@ -1,6 +1,7 @@
 import { byteFormat } from "../../deps.ts";
 import { BufferReader, BufferWriter } from "../buffer.ts";
-import { log, debug } from "../logger.ts";
+import { WriteError } from "../consttants/errors.ts";
+import { debug, log } from "../logger.ts";
 
 /** @ignore */
 interface PacketHeader {
@@ -23,7 +24,11 @@ export class SendPacket {
     data.write(this.header.no);
     data.writeBuffer(body);
     log.debug(`send: ${data.length}B \n${byteFormat(data.buffer)}\n`);
-    await conn.write(data.buffer);
+    try {
+      await conn.write(data.buffer);
+    } catch (error) {
+      throw new WriteError(error.message);
+    }
   }
 }
 

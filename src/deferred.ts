@@ -64,4 +64,8 @@ export class DeferredStack<T> {
       this._queue.shift().resolve();
     }
   }
+
+  reduceSize() {
+    this._size--;
+  }
 }

@@ -1,6 +1,7 @@
 import { Connection, ExecuteResult } from "./connection.ts";
 import { DeferredStack } from "./deferred.ts";
 import { config as logConfig, log } from "./logger.ts";
+import { WriteError } from "./consttants/errors.ts";
 
 /**
  * Clinet Config
@@ -71,7 +72,7 @@ export class Client {
       hostname: "127.0.0.1",
       username: "root",
       port: 3306,
-      pool: 1,
+      pool: 10,
       ...config
     };
     Object.freeze(this.config);
@@ -93,9 +94,15 @@ export class Client {
     const connection = await this._pool.pop();
     try {
       const result = await connection.query(sql, params);
-      return result;
-    } finally {
       this._pool.push(connection);
+      return result;
+    } catch (error) {
+      if (error instanceof WriteError) {
+        this._pool.reduceSize();
+      } else {
+        this._pool.push(connection);
+      }
+      throw error;
     }
   }
 
@@ -108,9 +115,15 @@ export class Client {
     const connection = await this._pool.pop();
     try {
       const result = await connection.execute(sql, params);
-      return result;
-    } finally {
       this._pool.push(connection);
+      return result;
+    } catch (error) {
+      if (error instanceof WriteError) {
+        this._pool.reduceSize();
+      } else {
+        this._pool.push(connection);
+      }
+      throw error;
     }
   }
 
@@ -125,13 +138,17 @@ export class Client {
       await connection.execute("BEGIN");
       const result = await processor(connection);
       await connection.execute("COMMIT");
+      this._pool.push(connection);
       return result;
     } catch (error) {
+      if (error instanceof WriteError) {
+        this._pool.reduceSize();
+      } else {
+        this._pool.push(connection);
+      }
       log.info(`ROLLBACK: ${error.message}`);
       await connection.execute("ROLLBACK");
       throw error;
-    } finally {
-      this._pool.push(connection);
     }
   }
 

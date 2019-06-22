@@ -4,6 +4,7 @@ import {
 } from "https://deno.land/std/testing/asserts.ts";
 import { runTests, test } from "https://deno.land/std/testing/mod.ts";
 import { Client } from "./mod.ts";
+import { WriteError } from "./src/consttants/errors.ts";
 
 let client: Client;
 
@@ -89,6 +90,19 @@ test(async function testPool() {
   assertEquals(client.config.pool, client.poolLength);
   assertEquals(client.config.pool, client.poolSize);
   assertEquals(result, expect);
+});
+
+test(async function testQueryOnClosed() {
+  for (const i of [0, 0, 0]) {
+    await assertThrowsAsync(async () => {
+      await client.transaction(async conn => {
+        await conn.close();
+        await conn.query("SELECT 1");
+      });
+    }, WriteError);
+  }
+  assertEquals(client.poolSize, 0);
+  const result = client.query("select 1");
 });
 
 test(async function testTransactionSuccess() {
