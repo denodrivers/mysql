@@ -38,9 +38,11 @@ test(async function testInsert() {
 });
 
 test(async function testUpdate() {
-  let result = await client.execute(`update users set ?? = ? WHERE id = ?`, [
+  let result = await client.execute(`update users set ?? = ?, ?? = ? WHERE id = ?`, [
     "name",
     "MYR",
+    "created_at",
+    new Date(),
     1
   ]);
   assertEquals(result, { affectedRows: 1, lastInsertId: 0 });
