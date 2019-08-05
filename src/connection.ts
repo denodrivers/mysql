@@ -31,6 +31,7 @@ export type ExecuteResult = {
 export class Connection {
   state: ConnectionState = ConnectionState.CONNECTING;
   capabilities: number = 0;
+  serverVersion: string;
 
   private conn: Deno.Conn;
 
@@ -50,6 +51,7 @@ export class Connection {
     });
     await new SendPacket(data, 0x1).send(this.conn);
     this.state = ConnectionState.CONNECTING;
+    this.serverVersion = handshakePacket.serverVersion;
     this.capabilities = handshakePacket.serverCapabilities;
 
     receive = await this.nextPacket();
@@ -156,11 +158,11 @@ export class Connection {
     }
 
     const rows = [];
-    receive = await this.nextPacket(); // EOF(less than 5.7)
-    if (receive.type == "RESULT") {
-      const row = parseRow(receive.body, fields);
-      rows.push(row);
+    if (this.serverVersion < "5.7.0") {
+      // EOF(less than 5.7)
+      receive = await this.nextPacket();
     }
+
     while (true) {
       receive = await this.nextPacket();
       if (receive.type === "EOF") {
