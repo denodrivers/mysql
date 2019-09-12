@@ -9,5 +9,5 @@ jobs:
     
     steps:
     - uses: actions/checkout@v1
-    - use: denolib/deno-action@0.17.0
+    - uses: denolib/deno-action@0.17.0
       args: run -A test.ts
