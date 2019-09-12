@@ -18,6 +18,6 @@ jobs:
     - uses: actions/checkout@v1
     - uses: denolib/deno-action@0.17.0
       with:
-        env:
-          DB_PORT: 3307
         args: run -A test.ts
+      env:
+        DB_PORT: 3307
