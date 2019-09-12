@@ -17,7 +17,6 @@ jobs:
     steps:
     - uses: actions/checkout@v1
     - uses: denolib/deno-action@0.17.0
-      env:
       with:
         env:
           DB_PORT: 3307
