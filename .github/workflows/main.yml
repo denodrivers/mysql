@@ -3,6 +3,14 @@ name: CI
 on: [push]
 
 jobs:
+  services：
+    mysql:
+      image: mysql:5.6
+      ports:
+        - 3306:3306
+      env:
+        MYSQL_ALLOW_EMPTY_PASSWORD: true
+    
   build:
 
     runs-on: ubuntu-latest
