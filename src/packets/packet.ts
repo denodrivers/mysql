@@ -40,14 +40,18 @@ export class ReceivePacket {
 
   async parse(reader: Deno.Reader): Promise<ReceivePacket> {
     const header = new BufferReader(new Uint8Array(4));
+    let readCount = 0;
     let nread = await reader.read(header.buffer);
-    if (!nread) return null;
+    if (nread === Deno.EOF) return null;
+    readCount = nread;
     this.header = {
       size: header.readUints(3),
       no: header.readUint8()
     };
     this.body = new BufferReader(new Uint8Array(this.header.size));
-    nread += await reader.read(this.body.buffer);
+    nread = await reader.read(this.body.buffer);
+    if (nread === Deno.EOF) return;
+    readCount += nread;
 
     switch (this.body.buffer[0]) {
       case 0x00:
@@ -65,11 +69,11 @@ export class ReceivePacket {
     }
 
     debug(() => {
-      const data = new Uint8Array(nread);
+      const data = new Uint8Array(readCount);
       data.set(header.buffer);
       data.set(this.body.buffer, 4);
       log.debug(
-        `receive: ${nread}B, size = ${this.header.size}, no = ${
+        `receive: ${readCount}B, size = ${this.header.size}, no = ${
           this.header.no
         } \n${byteFormat(data)}\n`
       );
