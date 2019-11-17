@@ -26,7 +26,7 @@ export interface ClientConfig {
   /** Number of retries that failed in the link process */
   retry?: number;
   /** Connection pool size default 1 */
-  pool?: number;
+  poolSize?: number;
 }
 
 /** Transaction processor */
@@ -72,13 +72,13 @@ export class Client {
       hostname: "127.0.0.1",
       username: "root",
       port: 3306,
-      pool: 10,
+      poolSize: 1,
       ...config
     };
     Object.freeze(this.config);
     this._connections = [];
     this._pool = new DeferredStack<Connection>(
-      this.config.pool,
+      this.config.poolSize,
       this._connections,
       this.createConnection.bind(this)
     );
