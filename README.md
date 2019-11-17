@@ -43,7 +43,7 @@ const client = await new Client().connect({
 
 Create client with connection pool.
 
-pool size is auto increment from 0 to `pool`
+pool size is auto increment from 0 to `poolSize`
 
 ```ts
 import { Client } from "https://deno.land/x/mysql/mod.ts";
@@ -51,7 +51,7 @@ const client = await new Client().connect({
   hostname: "127.0.0.1",
   username: "root",
   db: "dbname",
-  pool: 3, // pool size
+  poolSize: 3, // connection limit
   password: "password"
 });
 ```
