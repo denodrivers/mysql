@@ -12,7 +12,8 @@ export interface DeferredStackItemCreator<T> {
 
 /** @ignore */
 export function defer<T>(): Deferred<T> {
-  let reject, resolve;
+  let reject: (arg?: any) => void;
+  let resolve: (arg?: any) => void;
   const promise = new Promise<T>((res, rej) => {
     resolve = res;
     reject = rej;
@@ -29,7 +30,7 @@ export class DeferredStack<T> {
   private _queue: Deferred<T>[] = [];
   private _size = 0;
   constructor(
-    readonly max: number,
+    readonly poolSize: number,
     private _array: T[] = [],
     private readonly create: DeferredStackItemCreator<T>
   ) {
@@ -47,7 +48,7 @@ export class DeferredStack<T> {
   async pop(): Promise<T> {
     if (this._array.length) {
       return this._array.pop();
-    } else if (this._size < this.max) {
+    } else if (this._size < this.poolSize) {
       this._size++;
       const item = await this.create();
       return item;

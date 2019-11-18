@@ -89,8 +89,8 @@ test(async function testPool() {
     }
   ]);
   const result = await Promise.all(expect.map(() => client.query(`select 1`)));
-  assertEquals(client.config.pool, client.poolLength);
-  assertEquals(client.config.pool, client.poolSize);
+  assertEquals(client.config.poolSize, client.poolLength);
+  assertEquals(client.config.poolSize, client.poolSize);
   assertEquals(result, expect);
 });
 
@@ -147,7 +147,7 @@ async function main() {
 
   const config = {
     timeout: 10000,
-    pool: 3,
+    poolSize: 3,
     debug: false,
     hostname,
     username,
@@ -155,7 +155,7 @@ async function main() {
     db,
     password
   };
-  client = await new Client().connect({ ...config, pool: 1, db: null });
+  client = await new Client().connect({ ...config, poolSize: 1, db: null });
   await client.execute(`CREATE DATABASE IF NOT EXISTS ${db}`);
   await client.close();
   client = await new Client().connect(config);
