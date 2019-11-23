@@ -162,8 +162,8 @@ export class Connection {
     }
 
     const rows = [];
-    if (this.serverVersion < "5.7.0") {
-      // EOF(less than 5.7)
+    if (this.serverVersion < "5.7.0" && this.serverVersion.substr(-7) !== 'MariaDB') {
+      // EOF(less than 5.7 excluding MariaDB) 
       receive = await this.nextPacket();
     }
 
