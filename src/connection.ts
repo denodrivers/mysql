@@ -151,7 +151,7 @@ export class Connection {
    */
   async query(sql: string, params?: any[]): Promise<ExecuteResult | any[]> {
     const result = await this.execute(sql, params);
-    if (result && result.rows) {
+    if (result && result.rows.length) {
       return result.rows;
     } else {
       return result;
