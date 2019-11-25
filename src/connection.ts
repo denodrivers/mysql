@@ -115,6 +115,27 @@ export class Connection {
     }
   }
 
+  /**
+   * Check if database server version is less than 5.7.0
+   *
+   * MySQL version is "x.y.z"
+   *   eg "5.5.62"
+   *
+   * MariaDB version is "5.5.5-x.y.z-MariaDB[-build-infos]" for versions after 5 (10.0 etc)
+   *   eg "5.5.5-10.4.10-MariaDB-1:10.4.10+maria~bionic"
+   * and "x.y.z-MariaDB-[build-infos]" for 5.x versions
+   *   eg "5.5.64-MariaDB-1~trusty"
+   */
+  private lessThan57(): Boolean {
+    const version = this.serverVersion;
+    if (!version.includes("MariaDB")) return version < "5.7.0";
+    const segments = version.split("-");
+    // MariaDB v5.x
+    if (segments[1] === "MariaDB") return segments[0] < "5.7.0";
+    // MariaDB v10+
+    return false;
+  }
+
   /** Close database connection */
   close(): void {
     log.info("close connection");
@@ -162,7 +183,7 @@ export class Connection {
     }
 
     const rows = [];
-    if (this.serverVersion < "5.7.0") {
+    if (this.lessThan57()) {
       // EOF(less than 5.7)
       receive = await this.nextPacket();
     }
