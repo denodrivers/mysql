@@ -4,9 +4,9 @@ export { log };
 let isDebug = false;
 
 /** @ignore */
-export function debug(fun: Function) {
+export function debug(func: Function) {
   if (isDebug) {
-    fun();
+    func();
   }
 }
 

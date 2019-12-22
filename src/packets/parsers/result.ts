@@ -20,7 +20,7 @@ import {
   MYSQL_TYPE_TINY,
   MYSQL_TYPE_VARCHAR,
   MYSQL_TYPE_VAR_STRING
-} from "../../consttants/mysql_types.ts";
+} from "../../constant/mysql_types.ts";
 
 /** @ignore */
 export interface FieldInfo {

@@ -4,7 +4,7 @@ import {
 } from "https://deno.land/std/testing/asserts.ts";
 import { runTests, test } from "https://deno.land/std/testing/mod.ts";
 import { Client } from "./mod.ts";
-import { WriteError } from "./src/consttants/errors.ts";
+import { WriteError } from "./src/constant/errors.ts";
 
 let client: Client;
 
