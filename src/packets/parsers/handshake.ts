@@ -1,5 +1,5 @@
 import { BufferReader, BufferWriter } from "../../buffer.ts";
-import ServerCapabilities from "../../constant/capabilities";
+import ServerCapabilities from "../../constant/capabilities.ts";
 
 /** @ignore */
 export interface HandshakeBody {

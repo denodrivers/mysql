@@ -1,8 +1,8 @@
 import { BufferWriter } from "../../buffer.ts";
-import ServerCapabilities from "../../constant/capabilities";
+import ServerCapabilities from "../../constant/capabilities.ts";
 import { auth } from "../../auth/mysql_native_password.ts";
 import { HandshakeBody } from "../parsers/handshake.ts";
-import { Charset } from "../../constant/charset";
+import { Charset } from "../../constant/charset.ts";
 
 /** @ignore */
 export function buildAuth(

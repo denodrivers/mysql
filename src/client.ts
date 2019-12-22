@@ -1,7 +1,7 @@
 import { Connection, ExecuteResult } from "./connection.ts";
 import { DeferredStack } from "./deferred.ts";
 import { config as logConfig, log } from "./logger.ts";
-import { WriteError } from "./constant/errors";
+import { WriteError } from "./constant/errors.ts";
 
 /**
  * Clinet Config
