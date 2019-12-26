@@ -124,7 +124,7 @@ console.log(users, queryWithParams);
 ### transaction
 
 ```ts
-const users = await client.transcation(async conn => {
+const users = await client.transaction(async conn => {
   await conn.excute(`insert into users(name) values(?)`, ["test"]);
   return await conn.query(`select ?? from ??`, ["name", "users"]);
 });
