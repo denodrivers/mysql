@@ -112,7 +112,7 @@ console.log(result);
 ```ts
 const username = "manyuanrong";
 const users = await client.query(
-  `select * from users where username="${username}"`
+  `select * from users`
 );
 const queryWithParams = await client.query(
   "select ??,name from ?? where id = ?",
