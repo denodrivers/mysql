@@ -112,7 +112,7 @@ console.log(result);
 ```ts
 const username = "manyuanrong";
 const users = await client.query(
-  `select * from users where username="${username}"`
+  `select * from users`
 );
 const queryWithParams = await client.query(
   "select ??,name from ?? where id = ?",
@@ -124,7 +124,7 @@ console.log(users, queryWithParams);
 ### transaction
 
 ```ts
-const users = await client.transcation(async conn => {
+const users = await client.transaction(async conn => {
   await conn.excute(`insert into users(name) values(?)`, ["test"]);
   return await conn.query(`select ?? from ??`, ["name", "users"]);
 });
