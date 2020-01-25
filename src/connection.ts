@@ -40,7 +40,7 @@ export class Connection {
   private async _connect() {
     const { hostname, port } = this.client.config;
     log.info(`connecting ${hostname}:${port}`);
-    this.conn = await Deno.dial({
+    this.conn = await Deno.connect({
       hostname,
       port,
       transport: "tcp"
