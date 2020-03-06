@@ -1,13 +1,13 @@
+import { auth } from "../../auth/mysql_native_password.ts";
 import { BufferWriter } from "../../buffer.ts";
 import ServerCapabilities from "../../constant/capabilities.ts";
-import { auth } from "../../auth/mysql_native_password.ts";
-import { HandshakeBody } from "../parsers/handshake.ts";
 import { Charset } from "../../constant/charset.ts";
+import { HandshakeBody } from "../parsers/handshake.ts";
 
 /** @ignore */
 export function buildAuth(
   packet: HandshakeBody,
-  params: { username: string; password: string; db: string }
+  params: { username: string; password?: string; db?: string }
 ): Uint8Array {
   let clientParam: number =
     (params.db ? ServerCapabilities.CLIENT_CONNECT_WITH_DB : 0) |
@@ -55,7 +55,7 @@ export function buildAuth(
     } else {
       writer.write(0);
     }
-    if (clientParam & ServerCapabilities.CLIENT_CONNECT_WITH_DB) {
+    if (clientParam & ServerCapabilities.CLIENT_CONNECT_WITH_DB && params.db) {
       writer.writeNullTerminatedString(params.db);
     }
     if (clientParam & ServerCapabilities.CLIENT_PLUGIN_AUTH) {
@@ -63,4 +63,5 @@ export function buildAuth(
     }
     return writer.wroteData;
   }
+  return Uint8Array.from([]);
 }

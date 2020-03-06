@@ -20,8 +20,8 @@ export function defer<T>(): Deferred<T> {
   });
   return {
     promise,
-    reject,
-    resolve
+    reject: reject!,
+    resolve: resolve!
   };
 }
 
@@ -47,7 +47,7 @@ export class DeferredStack<T> {
 
   async pop(): Promise<T> {
     if (this._array.length) {
-      return this._array.pop();
+      return this._array.pop()!;
     } else if (this._size < this.poolSize) {
       this._size++;
       const item = await this.create();
@@ -56,13 +56,13 @@ export class DeferredStack<T> {
     const d = defer<T>();
     this._queue.push(d);
     await d.promise;
-    return this._array.pop();
+    return this._array.pop()!;
   }
 
   async push(item: T) {
     this._array.push(item);
     if (this._queue.length) {
-      this._queue.shift().resolve();
+      this._queue.shift()!.resolve();
     }
   }
 

@@ -31,14 +31,14 @@ export type ExecuteResult = {
 export class Connection {
   state: ConnectionState = ConnectionState.CONNECTING;
   capabilities: number = 0;
-  serverVersion: string;
+  serverVersion: string = "";
 
-  private conn: Deno.Conn;
+  private conn?: Deno.Conn;
 
   constructor(readonly client: Client) {}
 
   private async _connect() {
-    const { hostname, port } = this.client.config;
+    const { hostname, port = 3306 } = this.client.config;
     log.info(`connecting ${hostname}:${port}`);
     this.conn = await Deno.connect({
       hostname,
@@ -47,9 +47,10 @@ export class Connection {
     });
 
     let receive = await this.nextPacket();
+    if (!receive) throw new Error("Connection failed");
     const handshakePacket = parseHandshake(receive.body);
     const data = buildAuth(handshakePacket, {
-      username: this.client.config.username,
+      username: this.client.config.username ?? "",
       password: this.client.config.password,
       db: this.client.config.db
     });
@@ -59,6 +60,7 @@ export class Connection {
     this.capabilities = handshakePacket.serverCapabilities;
 
     receive = await this.nextPacket();
+    if (!receive) throw new Error("Connection failed");
     const header = receive.body.readUint8();
     if (header === 0xff) {
       const error = parseError(receive.body, this);
@@ -101,7 +103,7 @@ export class Connection {
     }
   }
 
-  private async nextPacket(): Promise<ReceivePacket> {
+  private async nextPacket(): Promise<ReceivePacket | undefined> {
     while (this.conn) {
       const packet = await new ReceivePacket().parse(this.conn);
       if (packet) {
@@ -164,9 +166,13 @@ export class Connection {
    * @param params query params
    */
   async execute(sql: string, params?: any[]): Promise<ExecuteResult> {
+    if (!this.conn) {
+      throw new Error("Must be connected first");
+    }
     const data = buildQuery(sql, params);
     await new SendPacket(data, 0).send(this.conn);
     let receive = await this.nextPacket();
+    if (!receive) throw new Error("Execute failed");
     if (receive.type === "OK") {
       receive.body.skip(1);
       return {
@@ -178,8 +184,10 @@ export class Connection {
     const fields: FieldInfo[] = [];
     while (fieldCount--) {
       const packet = await this.nextPacket();
-      const field = parseField(packet.body);
-      fields.push(field);
+      if (packet) {
+        const field = parseField(packet.body);
+        fields.push(field);
+      }
     }
 
     const rows = [];
@@ -190,6 +198,7 @@ export class Connection {
 
     while (true) {
       receive = await this.nextPacket();
+      if (!receive) throw new Error("Execute failed");
       if (receive.type === "EOF") {
         break;
       } else {

@@ -34,11 +34,11 @@ export class SendPacket {
 
 /** @ignore */
 export class ReceivePacket {
-  header: PacketHeader;
-  body: BufferReader;
-  type: "EOF" | "OK" | "ERR" | "RESULT";
+  header!: PacketHeader;
+  body!: BufferReader;
+  type!: "EOF" | "OK" | "ERR" | "RESULT";
 
-  async parse(reader: Deno.Reader): Promise<ReceivePacket> {
+  async parse(reader: Deno.Reader): Promise<ReceivePacket | null> {
     const header = new BufferReader(new Uint8Array(4));
     let readCount = 0;
     let nread = await reader.read(header.buffer);
@@ -50,7 +50,7 @@ export class ReceivePacket {
     };
     this.body = new BufferReader(new Uint8Array(this.header.size));
     nread = await reader.read(this.body.buffer);
-    if (nread === Deno.EOF) return;
+    if (nread === Deno.EOF) return null;
     readCount += nread;
 
     switch (this.body.buffer[0]) {

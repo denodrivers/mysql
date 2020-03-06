@@ -38,8 +38,8 @@ export interface TransactionProcessor<T> {
  * MySQL client
  */
 export class Client {
-  config: ClientConfig;
-  private _pool: DeferredStack<Connection>;
+  config: ClientConfig = {};
+  private _pool?: DeferredStack<Connection>;
   private _connections: Connection[] = [];
 
   private async createConnection(): Promise<Connection> {
@@ -50,12 +50,12 @@ export class Client {
 
   /** get size of the pool, Number of connections created */
   get poolSize() {
-    return this._pool.size;
+    return this._pool?.size ?? 0;
   }
 
   /** get length of the pool, Number of connections available */
   get poolLength() {
-    return this._pool.length;
+    return this._pool?.length ?? 0;
   }
 
   /**
@@ -65,7 +65,7 @@ export class Client {
    */
   async connect(config: ClientConfig): Promise<Client> {
     await logConfig({
-      debug: config.debug,
+      debug: !!config.debug,
       logFile: "mysql.log"
     });
     this.config = {
@@ -78,7 +78,7 @@ export class Client {
     Object.freeze(this.config);
     this._connections = [];
     this._pool = new DeferredStack<Connection>(
-      this.config.poolSize,
+      this.config.poolSize || 10,
       this._connections,
       this.createConnection.bind(this)
     );
@@ -91,6 +91,9 @@ export class Client {
    * @param params query params
    */
   async query(sql: string, params?: any[]): Promise<any> {
+    if (!this._pool) {
+      throw new Error("Must be connected first");
+    }
     const connection = await this._pool.pop();
     try {
       const result = await connection.query(sql, params);
@@ -112,6 +115,9 @@ export class Client {
    * @param params query params
    */
   async execute(sql: string, params?: any[]): Promise<ExecuteResult> {
+    if (!this._pool) {
+      throw new Error("Must be connected first");
+    }
     const connection = await this._pool.pop();
     try {
       const result = await connection.execute(sql, params);
@@ -133,6 +139,9 @@ export class Client {
    * @param processor transation processor
    */
   async transaction<T = any>(processor: TransactionProcessor<T>): Promise<T> {
+    if (!this._pool) {
+      throw new Error("Must be connected first");
+    }
     const connection = await this._pool.pop();
     try {
       await connection.execute("BEGIN");

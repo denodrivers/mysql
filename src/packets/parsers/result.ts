@@ -40,20 +40,20 @@ export interface FieldInfo {
 
 /** @ignore */
 export function parseField(reader: BufferReader): FieldInfo {
-  const catalog = reader.readLenCodeString();
-  const schema = reader.readLenCodeString();
-  const table = reader.readLenCodeString();
-  const originTable = reader.readLenCodeString();
-  const name = reader.readLenCodeString();
-  const originName = reader.readLenCodeString();
+  const catalog = reader.readLenCodeString()!;
+  const schema = reader.readLenCodeString()!;
+  const table = reader.readLenCodeString()!;
+  const originTable = reader.readLenCodeString()!;
+  const name = reader.readLenCodeString()!;
+  const originName = reader.readLenCodeString()!;
   reader.skip(1);
-  const encoding = reader.readUint16();
-  const fieldLen = reader.readUint32();
-  const fieldType = reader.readUint8();
-  const fieldFlag = reader.readUint16();
-  const decimals = reader.readUint8();
+  const encoding = reader.readUint16()!;
+  const fieldLen = reader.readUint32()!;
+  const fieldType = reader.readUint8()!;
+  const fieldFlag = reader.readUint16()!;
+  const decimals = reader.readUint8()!;
   reader.skip(1);
-  const defaultVal = reader.readLenCodeString();
+  const defaultVal = reader.readLenCodeString()!;
   return {
     catalog,
     schema,
@@ -72,7 +72,7 @@ export function parseField(reader: BufferReader): FieldInfo {
 
 /** @ignore */
 export function parseRow(reader: BufferReader, fileds: FieldInfo[]): any {
-  const row = {};
+  const row: any = {};
   for (let i = 0; i < fileds.length; i++) {
     const name = fileds[i].name;
     const val = reader.readLenCodeString();
