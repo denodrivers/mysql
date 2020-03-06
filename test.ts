@@ -156,7 +156,11 @@ async function main() {
     db,
     password
   };
-  client = await new Client().connect({ ...config, poolSize: 1 });
+  client = await new Client().connect({
+    ...config,
+    poolSize: 1,
+    db: undefined
+  });
   await client.execute(`CREATE DATABASE IF NOT EXISTS ${db}`);
   await client.close();
   client = await new Client().connect(config);

@@ -31,5 +31,5 @@ before_install:
   
 script:
   - docker run -d -p $DB_PORT:3306 -e MYSQL_ALLOW_EMPTY_PASSWORD=true $DB_VERSION
-  - sleep 30
+  - sleep 10
   - deno run --allow-all ./test.ts
