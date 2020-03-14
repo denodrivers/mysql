@@ -1,4 +1,4 @@
-import { BufferReader } from "../../buffer.ts";
+import { BufferReader } from "../../buffer.ts"
 import {
   MYSQL_TYPE_DATE,
   MYSQL_TYPE_DATETIME,
@@ -20,40 +20,38 @@ import {
   MYSQL_TYPE_TINY,
   MYSQL_TYPE_VARCHAR,
   MYSQL_TYPE_VAR_STRING
-} from "../../constant/mysql_types.ts";
+} from "../../constant/mysql_types.ts"
 
-/** @ignore */
 export interface FieldInfo {
-  catalog: string;
-  schema: string;
-  table: string;
-  originTable: string;
-  name: string;
-  originName: string;
-  encoding: number;
-  fieldLen: number;
-  fieldType: number;
-  fieldFlag: number;
-  decimals: number;
-  defaultVal: string;
+  catalog: string
+  schema: string
+  table: string
+  originTable: string
+  name: string
+  originName: string
+  encoding: number
+  fieldLen: number
+  fieldType: number
+  fieldFlag: number
+  decimals: number
+  defaultVal: string
 }
 
-/** @ignore */
 export function parseField(reader: BufferReader): FieldInfo {
-  const catalog = reader.readLenCodeString()!;
-  const schema = reader.readLenCodeString()!;
-  const table = reader.readLenCodeString()!;
-  const originTable = reader.readLenCodeString()!;
-  const name = reader.readLenCodeString()!;
-  const originName = reader.readLenCodeString()!;
-  reader.skip(1);
-  const encoding = reader.readUint16()!;
-  const fieldLen = reader.readUint32()!;
-  const fieldType = reader.readUint8()!;
-  const fieldFlag = reader.readUint16()!;
-  const decimals = reader.readUint8()!;
-  reader.skip(1);
-  const defaultVal = reader.readLenCodeString()!;
+  const catalog = reader.readLenCodeString()!
+  const schema = reader.readLenCodeString()!
+  const table = reader.readLenCodeString()!
+  const originTable = reader.readLenCodeString()!
+  const name = reader.readLenCodeString()!
+  const originName = reader.readLenCodeString()!
+  reader.skip(1)
+  const encoding = reader.readUint16()!
+  const fieldLen = reader.readUint32()!
+  const fieldType = reader.readUint8()!
+  const fieldFlag = reader.readUint16()!
+  const decimals = reader.readUint8()!
+  reader.skip(1)
+  const defaultVal = reader.readLenCodeString()!
   return {
     catalog,
     schema,
@@ -67,25 +65,23 @@ export function parseField(reader: BufferReader): FieldInfo {
     encoding,
     decimals,
     defaultVal
-  };
-}
-
-/** @ignore */
-export function parseRow(reader: BufferReader, fileds: FieldInfo[]): any {
-  const row: any = {};
-  for (let i = 0; i < fileds.length; i++) {
-    const name = fileds[i].name;
-    const val = reader.readLenCodeString();
-    row[name] = val === null ? null : convertType(fileds[i], val);
   }
-  return row;
 }
 
-/** @ignore */
+export function parseRow(reader: BufferReader, fileds: FieldInfo[]): any {
+  const row: any = {}
+  for (let i = 0; i < fileds.length; i++) {
+    const name = fileds[i].name
+    const val = reader.readLenCodeString()
+    row[name] = val === null ? null : convertType(fileds[i], val)
+  }
+  return row
+}
+
 function convertType(field: FieldInfo, val: string): any {
-  const { fieldType, fieldLen } = field;
+  const { fieldType, fieldLen } = field
   if (fieldType === MYSQL_TYPE_TINY && fieldLen === 1) {
-    return !!parseInt(val);
+    return !!parseInt(val)
   }
   switch (fieldType) {
     case MYSQL_TYPE_DECIMAL:
@@ -93,17 +89,17 @@ function convertType(field: FieldInfo, val: string): any {
     case MYSQL_TYPE_FLOAT:
     case MYSQL_TYPE_DATETIME2:
     case MYSQL_TYPE_NEWDECIMAL:
-      return parseFloat(val);
+      return parseFloat(val)
     case MYSQL_TYPE_TINY:
     case MYSQL_TYPE_SHORT:
     case MYSQL_TYPE_LONG:
     case MYSQL_TYPE_LONGLONG:
     case MYSQL_TYPE_INT24:
-      return parseInt(val);
+      return parseInt(val)
     case MYSQL_TYPE_VARCHAR:
     case MYSQL_TYPE_VAR_STRING:
     case MYSQL_TYPE_STRING:
-      return val;
+      return val
     case MYSQL_TYPE_DATE:
     case MYSQL_TYPE_TIMESTAMP:
     case MYSQL_TYPE_TIME:
@@ -112,8 +108,8 @@ function convertType(field: FieldInfo, val: string): any {
     case MYSQL_TYPE_TIMESTAMP2:
     case MYSQL_TYPE_DATETIME2:
     case MYSQL_TYPE_TIME2:
-      return new Date(val);
+      return new Date(val)
     default:
-      return val;
+      return val
   }
 }

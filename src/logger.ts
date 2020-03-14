@@ -1,18 +1,16 @@
-import * as log from "https://deno.land/x/std/log/mod.ts";
-export { log };
+import * as log from "https://deno.land/x/std/log/mod.ts"
+export { log }
 
-let isDebug = false;
+let isDebug = false
 
-/** @ignore */
 export function debug(func: Function) {
   if (isDebug) {
-    func();
+    func()
   }
 }
 
-/** @ignore */
 export async function config(config: { debug: boolean; logFile: string }) {
-  isDebug = config.debug;
+  isDebug = config.debug
   await log.setup({
     handlers: {
       console: new log.handlers.ConsoleHandler(config.debug ? "DEBUG" : "INFO"),
@@ -28,5 +26,5 @@ export async function config(config: { debug: boolean; logFile: string }) {
         handlers: ["console", "file"]
       }
     }
-  });
+  })
 }

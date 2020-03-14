@@ -1,37 +1,37 @@
-import { Connection, ExecuteResult } from "./connection.ts";
-import { DeferredStack } from "./deferred.ts";
-import { config as logConfig, log } from "./logger.ts";
-import { WriteError } from "./constant/errors.ts";
+import { Connection, ExecuteResult } from "./connection.ts"
+import { DeferredStack } from "./deferred.ts"
+import { config as logConfig, log } from "./logger.ts"
+import { WriteError } from "./constant/errors.ts"
 
 /**
  * Clinet Config
  */
 export interface ClientConfig {
   /** Database hostname */
-  hostname?: string;
+  hostname?: string
   /** Database username */
-  username?: string;
+  username?: string
   /** Database password */
-  password?: string;
+  password?: string
   /** Database port */
-  port?: number;
+  port?: number
   /** Database name */
-  db?: string;
+  db?: string
   /** Whether to Display Packet Debugging Information */
-  debug?: boolean;
+  debug?: boolean
   /** Connect timeout */
-  timeout?: number;
+  timeout?: number
   /** TODO: auto reconnect */
-  reconnect?: boolean;
+  reconnect?: boolean
   /** Number of retries that failed in the link process */
-  retry?: number;
+  retry?: number
   /** Connection pool size default 1 */
-  poolSize?: number;
+  poolSize?: number
 }
 
 /** Transaction processor */
 export interface TransactionProcessor<T> {
-  (connection: Connection): Promise<T>;
+  (connection: Connection): Promise<T>
 }
 
 /**
@@ -39,23 +39,23 @@ export interface TransactionProcessor<T> {
  */
 export class Client {
   config: ClientConfig = {};
-  private _pool?: DeferredStack<Connection>;
+  private _pool?: DeferredStack<Connection>
   private _connections: Connection[] = [];
 
   private async createConnection(): Promise<Connection> {
-    let connection: Connection = new Connection(this);
-    await connection.connect();
-    return connection;
+    let connection: Connection = new Connection(this)
+    await connection.connect()
+    return connection
   }
 
   /** get size of the pool, Number of connections created */
   get poolSize() {
-    return this._pool?.size ?? 0;
+    return this._pool?.size ?? 0
   }
 
   /** get length of the pool, Number of connections available */
   get poolLength() {
-    return this._pool?.length ?? 0;
+    return this._pool?.length ?? 0
   }
 
   /**
@@ -67,22 +67,22 @@ export class Client {
     await logConfig({
       debug: !!config.debug,
       logFile: "mysql.log"
-    });
+    })
     this.config = {
       hostname: "127.0.0.1",
       username: "root",
       port: 3306,
       poolSize: 1,
       ...config
-    };
-    Object.freeze(this.config);
-    this._connections = [];
+    }
+    Object.freeze(this.config)
+    this._connections = []
     this._pool = new DeferredStack<Connection>(
       this.config.poolSize || 10,
       this._connections,
       this.createConnection.bind(this)
-    );
-    return this;
+    )
+    return this
   }
 
   /**
@@ -92,20 +92,20 @@ export class Client {
    */
   async query(sql: string, params?: any[]): Promise<any> {
     if (!this._pool) {
-      throw new Error("Must be connected first");
+      throw new Error("Must be connected first")
     }
-    const connection = await this._pool.pop();
+    const connection = await this._pool.pop()
     try {
-      const result = await connection.query(sql, params);
-      this._pool.push(connection);
-      return result;
+      const result = await connection.query(sql, params)
+      this._pool.push(connection)
+      return result
     } catch (error) {
       if (error instanceof WriteError) {
-        this._pool.reduceSize();
+        this._pool.reduceSize()
       } else {
-        this._pool.push(connection);
+        this._pool.push(connection)
       }
-      throw error;
+      throw error
     }
   }
 
@@ -116,20 +116,20 @@ export class Client {
    */
   async execute(sql: string, params?: any[]): Promise<ExecuteResult> {
     if (!this._pool) {
-      throw new Error("Must be connected first");
+      throw new Error("Must be connected first")
     }
-    const connection = await this._pool.pop();
+    const connection = await this._pool.pop()
     try {
-      const result = await connection.execute(sql, params);
-      this._pool.push(connection);
-      return result;
+      const result = await connection.execute(sql, params)
+      this._pool.push(connection)
+      return result
     } catch (error) {
       if (error instanceof WriteError) {
-        this._pool.reduceSize();
+        this._pool.reduceSize()
       } else {
-        this._pool.push(connection);
+        this._pool.push(connection)
       }
-      throw error;
+      throw error
     }
   }
 
@@ -140,24 +140,24 @@ export class Client {
    */
   async transaction<T = any>(processor: TransactionProcessor<T>): Promise<T> {
     if (!this._pool) {
-      throw new Error("Must be connected first");
+      throw new Error("Must be connected first")
     }
-    const connection = await this._pool.pop();
+    const connection = await this._pool.pop()
     try {
-      await connection.execute("BEGIN");
-      const result = await processor(connection);
-      await connection.execute("COMMIT");
-      this._pool.push(connection);
-      return result;
+      await connection.execute("BEGIN")
+      const result = await processor(connection)
+      await connection.execute("COMMIT")
+      this._pool.push(connection)
+      return result
     } catch (error) {
       if (error instanceof WriteError) {
-        this._pool.reduceSize();
+        this._pool.reduceSize()
       } else {
-        this._pool.push(connection);
+        this._pool.push(connection)
       }
-      log.info(`ROLLBACK: ${error.message}`);
-      await connection.execute("ROLLBACK");
-      throw error;
+      log.info(`ROLLBACK: ${error.message}`)
+      await connection.execute("ROLLBACK")
+      throw error
     }
   }
 
@@ -165,6 +165,6 @@ export class Client {
    * close connection
    */
   async close() {
-    await Promise.all(this._connections.map(conn => conn.close()));
+    await Promise.all(this._connections.map(conn => conn.close()))
   }
 }

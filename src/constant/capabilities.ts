@@ -13,4 +13,4 @@ enum ServerCapabilities {
   CLIENT_CONNECT_ATTRS = 0x00100000
 }
 
-export default ServerCapabilities;
+export default ServerCapabilities

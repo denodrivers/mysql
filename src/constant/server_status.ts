@@ -1,4 +1,3 @@
-/** @ignore */
 export enum ServerStatus {
     IN_TRANSACTION = 0x0001,
     AUTO_COMMIT = 0x0002,
