@@ -142,7 +142,7 @@ async function main() {
   const { DB_PORT, DB_NAME, DB_PASSWORD, DB_USER, DB_HOST } = Deno.env()
   const port = DB_PORT ? parseInt(DB_PORT) : 3306
   const db = DB_NAME || "test"
-  const password = DB_PASSWORD
+  const password = DB_PASSWORD || ""
   const username = DB_USER || "root"
   const hostname = DB_HOST || "127.0.0.1"
 
@@ -162,10 +162,10 @@ async function main() {
     db: undefined
   })
   
-  await client.execute(`CREATE DATABASE IF NOT EXISTS ${db}`)
+  await client.execute(`CREATE DATABASE IF NOT EXISTS \`${db}\``)
   await client.close()
-  // client = await new Client().connect(config)
-  // await runTests()
+  client = await new Client().connect(config)
+  await runTests()
   // console.log("end")
 }
 
