@@ -1,17 +1,15 @@
-# deno_mysql
+# Deno MySQL driver
 
 [![Build Status](https://www.travis-ci.org/manyuanrong/deno_mysql.svg?branch=master)](https://www.travis-ci.org/manyuanrong/deno_mysql)
 ![GitHub](https://img.shields.io/github/license/manyuanrong/deno_mysql.svg)
 ![GitHub release](https://img.shields.io/github/release/manyuanrong/deno_mysql.svg)
-![(Deno)](https://img.shields.io/badge/deno-0.27.0-green.svg)
+![(Deno)](https://img.shields.io/badge/deno-0.35.0-green.svg)
 
 MySQL and MariaDB (5.5 and 10.2+) database driver for Deno.
 
 MariaDB 10.0 and 10.1 are not supported at the moment
 
 On this basis, there is also an ORM library: [Deno Simple Orm](https://github.com/manyuanrong/dso)
-
-欢迎国内的小伙伴加我专门建的 Deno QQ 交流群：698469316
 
 ## TODO
 
@@ -34,13 +32,13 @@ On this basis, there is also an ORM library: [Deno Simple Orm](https://github.co
 ### connect
 
 ```ts
-import { Client } from "https://deno.land/x/mysql/mod.ts";
+import { Client } from "https://deno.land/x/mysql/mod.ts"
 const client = await new Client().connect({
   hostname: "127.0.0.1",
   username: "root",
   db: "dbname",
   password: "password"
-});
+})
 ```
 
 ### connect pool
@@ -50,27 +48,27 @@ Create client with connection pool.
 pool size is auto increment from 0 to `poolSize`
 
 ```ts
-import { Client } from "https://deno.land/x/mysql/mod.ts";
+import { Client } from "https://deno.land/x/mysql/mod.ts"
 const client = await new Client().connect({
   hostname: "127.0.0.1",
   username: "root",
   db: "dbname",
   poolSize: 3, // connection limit
   password: "password"
-});
+})
 ```
 
 ### create database
 
 ```ts
-await client.execute(`CREATE DATABASE IF NOT EXISTS enok`);
-await client.execute(`USE enok`);
+await client.execute(`CREATE DATABASE IF NOT EXISTS enok`)
+await client.execute(`USE enok`)
 ```
 
 ### create table
 
 ```ts
-await client.execute(`DROP TABLE IF EXISTS users`);
+await client.execute(`DROP TABLE IF EXISTS users`)
 await client.execute(`
     CREATE TABLE users (
         id int(11) NOT NULL AUTO_INCREMENT,
@@ -78,32 +76,32 @@ await client.execute(`
         created_at timestamp not null default current_timestamp,
         PRIMARY KEY (id)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
-`);
+`)
 ```
 
 ### insert
 
 ```ts
-let result = await client.execute(`INSERT INTO users(name) values(?)`, [
+const result = await client.execute(`INSERT INTO users(name) values(?)`, [
   "manyuanrong"
-]);
-console.log(result);
+])
+console.log(result)
 // { affectedRows: 1, lastInsertId: 1 }
 ```
 
 ### update
 
 ```ts
-let result = await client.execute(`update users set ?? = ?`, ["name", "MYR"]);
-console.log(result);
+const result = await client.execute(`update users set ?? = ?`, ["name", "MYR"])
+console.log(result)
 // { affectedRows: 1, lastInsertId: 0 }
 ```
 
 ### delete
 
 ```ts
-let result = await client.execute(`delete from users where ?? = ?`, ["id", 1]);
-console.log(result);
+const result = await client.execute(`delete from users where ?? = ?`, ["id", 1])
+console.log(result)
 // { affectedRows: 1, lastInsertId: 0 }
 ```
 
@@ -112,27 +110,27 @@ console.log(result);
 ```ts
 const username = "manyuanrong";
 const users = await client.query(
-  `select * from users`
-);
+`select * from users`
+)
 const queryWithParams = await client.query(
   "select ??,name from ?? where id = ?",
   ["id", "users", 1]
-);
-console.log(users, queryWithParams);
+)
+console.log(users, queryWithParams)
 ```
 
 ### transaction
 
 ```ts
 const users = await client.transaction(async conn => {
-  await conn.excute(`insert into users(name) values(?)`, ["test"]);
-  return await conn.query(`select ?? from ??`, ["name", "users"]);
-});
-console.log(users.length);
+  await conn.excute(`insert into users(name) values(?)`, ["test"])
+  return await conn.query(`select ?? from ??`, ["name", "users"])
+})
+console.log(users.length)
 ```
 
 ### close
 
 ```ts
-await client.close();
+await client.close()
 ```
