@@ -134,6 +134,7 @@ export class Connection {
     const segments = version.split("-")
     // MariaDB v5.x
     if (segments[1] === "MariaDB") return segments[0] < "5.7.0"
+    if (segments[2] === "MariaDB") return segments[1] < "5.7.0"
     // MariaDB v10+
     return false
   }
