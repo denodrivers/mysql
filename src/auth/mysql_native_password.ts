@@ -1,5 +1,5 @@
 import { encode } from "../../deps.ts";
-import { Hash } from "https://deno.land/x/checksum@1.1.0/mod.ts";
+import { Hash } from "https://deno.land/x/checksum@1.2.0/mod.ts";
 
 /** @ignore */
 export function auth(password: string, seed: Uint8Array): Uint8Array {
