@@ -12,4 +12,4 @@ do
     sleep 10
 done
 
-echo "Failded waiting for MySQL" && exit 1
+echo "Failed waiting for MySQL" && exit 1
