@@ -1,3 +1,4 @@
+import { delay } from "../deps.ts";
 import { Client } from "./client.ts";
 import { NoResponseError } from "./constant/errors.ts";
 import { log } from "./logger.ts";
@@ -104,6 +105,9 @@ export class Connection {
   }
 
   private async nextPacket(): Promise<ReceivePacket | undefined> {
+    let eofCount = 0;
+    const timeout = this.client.config.timeout || 1000;
+
     while (this.conn) {
       const packet = await new ReceivePacket().parse(this.conn);
       if (packet) {
@@ -114,7 +118,8 @@ export class Connection {
         }
         return packet;
       } else {
-        break;
+        if (eofCount * 100 >= timeout) new Error("Read packet timeout");
+        await delay(100);
       }
     }
   }
