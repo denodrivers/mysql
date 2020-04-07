@@ -80,7 +80,7 @@ export class Connection {
     while (retry--) {
       try {
         await Promise.race([
-          this._connect().then(() => clearTimeout(timer)),
+          this._connect().finally(() => clearTimeout(timer)),
           new Promise(
             (_, reject) =>
               (timer = setTimeout(() => {
