@@ -1,7 +1,7 @@
 import {
   assertEquals,
   assertThrowsAsync,
-} from "https://deno.land/std@v0.35.0/testing/asserts.ts";
+} from "https://deno.land/std@v0.39.0/testing/asserts.ts";
 import { WriteError } from "./src/constant/errors.ts";
 import { createTestDB, testWithClient } from "./test.util.ts";
 

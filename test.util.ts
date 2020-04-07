@@ -10,7 +10,7 @@ const hostname = DB_HOST || "127.0.0.1";
 const config = {
   timeout: 10000,
   poolSize: 3,
-  debug: false,
+  debug: true,
   hostname,
   username,
   port,

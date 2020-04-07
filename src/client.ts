@@ -1,5 +1,5 @@
 import { Connection, ExecuteResult } from "./connection.ts";
-import { WriteError } from "./constant/errors.ts";
+import { NoResponseError, WriteError } from "./constant/errors.ts";
 import { DeferredStack } from "./deferred.ts";
 import { log } from "./logger.ts";
 
@@ -88,22 +88,9 @@ export class Client {
    * @param params query params
    */
   async query(sql: string, params?: any[]): Promise<any> {
-    if (!this._pool) {
-      throw new Error("Must be connected first");
-    }
-    const connection = await this._pool.pop();
-    try {
-      const result = await connection.query(sql, params);
-      this._pool.push(connection);
-      return result;
-    } catch (error) {
-      if (error instanceof WriteError) {
-        this._pool.reduceSize();
-      } else {
-        this._pool.push(connection);
-      }
-      throw error;
-    }
+    return this.useConnection(async (connection) => {
+      return await connection.query(sql, params);
+    });
   }
 
   /**
@@ -112,16 +99,22 @@ export class Client {
    * @param params query params
    */
   async execute(sql: string, params?: any[]): Promise<ExecuteResult> {
+    return this.useConnection(async (connection) => {
+      return await connection.execute(sql, params);
+    });
+  }
+
+  async useConnection<T>(fn: (conn: Connection) => Promise<T>) {
     if (!this._pool) {
-      throw new Error("Must be connected first");
+      throw new Error("Unconnected");
     }
     const connection = await this._pool.pop();
     try {
-      const result = await connection.execute(sql, params);
+      const result = await fn(connection);
       this._pool.push(connection);
       return result;
     } catch (error) {
-      if (error instanceof WriteError) {
+      if (error instanceof WriteError || error instanceof NoResponseError) {
         this._pool.reduceSize();
       } else {
         this._pool.push(connection);
@@ -136,26 +129,18 @@ export class Client {
    * @param processor transation processor
    */
   async transaction<T = any>(processor: TransactionProcessor<T>): Promise<T> {
-    if (!this._pool) {
-      throw new Error("Must be connected first");
-    }
-    const connection = await this._pool.pop();
-    try {
-      await connection.execute("BEGIN");
-      const result = await processor(connection);
-      await connection.execute("COMMIT");
-      this._pool.push(connection);
-      return result;
-    } catch (error) {
-      if (error instanceof WriteError) {
-        this._pool.reduceSize();
-      } else {
-        this._pool.push(connection);
+    return this.useConnection(async (connection) => {
+      try {
+        await connection.execute("BEGIN");
+        const result = await processor(connection);
+        await connection.execute("COMMIT");
+        return result;
+      } catch (error) {
+        log.info(`ROLLBACK: ${error.message}`);
+        await connection.execute("ROLLBACK");
+        throw error;
       }
-      log.info(`ROLLBACK: ${error.message}`);
-      await connection.execute("ROLLBACK");
-      throw error;
-    }
+    });
   }
 
   /**

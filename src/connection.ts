@@ -1,4 +1,5 @@
 import { Client } from "./client.ts";
+import { NoResponseError } from "./constant/errors.ts";
 import { log } from "./logger.ts";
 import { buildAuth } from "./packets/builders/auth.ts";
 import { buildQuery } from "./packets/builders/query.ts";
@@ -14,7 +15,7 @@ export enum ConnectionState {
   CONNECTING,
   CONNECTED,
   COLSING,
-  CLOSED
+  CLOSED,
 }
 
 /**
@@ -43,7 +44,7 @@ export class Connection {
     this.conn = await Deno.connect({
       hostname,
       port,
-      transport: "tcp"
+      transport: "tcp",
     });
 
     let receive = await this.nextPacket();
@@ -52,7 +53,7 @@ export class Connection {
     const data = buildAuth(handshakePacket, {
       username: this.client.config.username ?? "",
       password: this.client.config.password,
-      db: this.client.config.db
+      db: this.client.config.db,
     });
     await new SendPacket(data, 0x1).send(this.conn);
     this.state = ConnectionState.CONNECTING;
@@ -87,7 +88,7 @@ export class Connection {
                 this.conn && this.conn.close();
                 reject(new Error("connect timeout"));
               }, timeout))
-          )
+          ),
         ]);
         if (this.state == ConnectionState.CONNECTED) {
           break;
@@ -113,6 +114,8 @@ export class Connection {
           throw new Error(error.message);
         }
         return packet;
+      } else {
+        break;
       }
     }
   }
@@ -172,12 +175,12 @@ export class Connection {
     const data = buildQuery(sql, params);
     await new SendPacket(data, 0).send(this.conn);
     let receive = await this.nextPacket();
-    if (!receive) throw new Error("Execute failed");
+    if (!receive) throw new NoResponseError("Execute failed");
     if (receive.type === "OK") {
       receive.body.skip(1);
       return {
         affectedRows: receive.body.readEncodedLen(),
-        lastInsertId: receive.body.readEncodedLen()
+        lastInsertId: receive.body.readEncodedLen(),
       };
     }
     let fieldCount = receive.body.readEncodedLen();

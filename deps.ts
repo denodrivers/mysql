@@ -4,4 +4,5 @@ export { replaceParams } from "https://deno.land/x/sql_builder@1.3.5/util.ts";
 export {
   deferred,
   Deferred,
+  delay,
 } from "https://deno.land/std@v0.39.0/util/async.ts";

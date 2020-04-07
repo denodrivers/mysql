@@ -3,3 +3,5 @@ export class WriteError extends Error {
     super(msg);
   }
 }
+
+export class NoResponseError extends Error {}
