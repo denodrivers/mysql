@@ -114,13 +114,13 @@ export class Connection {
           const error = parseError(packet.body, this);
           throw new Error(error.message);
         }
+        return packet!;
       } else {
         await delay(100);
         if (eofCount++ * 100 >= timeout) {
           throw new ResponseTimeoutError("Read packet timeout");
         }
       }
-      return packet!;
     }
     throw new Error("Not connected");
   }
