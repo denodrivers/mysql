@@ -48,7 +48,7 @@ export class Connection {
     });
 
     let receive = await this.nextPacket();
-    if (!receive) throw new Error("Connection failed");
+    if (!receive) throw new Error("Connect failed, No respond");
     const handshakePacket = parseHandshake(receive.body);
     const data = buildAuth(handshakePacket, {
       username: this.client.config.username ?? "",
@@ -61,7 +61,7 @@ export class Connection {
     this.capabilities = handshakePacket.serverCapabilities;
 
     receive = await this.nextPacket();
-    if (!receive) throw new Error("Connection failed");
+    if (!receive) throw new Error("Connect failed");
     const header = receive.body.readUint8();
     if (header === 0xff) {
       const error = parseError(receive.body, this);
@@ -93,7 +93,6 @@ export class Connection {
         if (this.state == ConnectionState.CONNECTED) {
           break;
         }
-        break;
       } catch (err) {
         log.error(err.message);
         log.info(`retrying ${retry}`);
