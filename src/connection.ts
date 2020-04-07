@@ -49,7 +49,6 @@ export class Connection {
     });
 
     let receive = await this.nextPacket();
-    if (!receive) throw new ResponseTimeoutError("Connect failed, No respond");
     const handshakePacket = parseHandshake(receive.body);
     const data = buildAuth(handshakePacket, {
       username: this.client.config.username ?? "",
@@ -62,7 +61,6 @@ export class Connection {
     this.capabilities = handshakePacket.serverCapabilities;
 
     receive = await this.nextPacket();
-    if (!receive) throw new ResponseTimeoutError("Connect failed");
     const header = receive.body.readUint8();
     if (header === 0xff) {
       const error = parseError(receive.body, this);
@@ -104,24 +102,27 @@ export class Connection {
     }
   }
 
-  private async nextPacket(): Promise<ReceivePacket | undefined> {
+  private async nextPacket(): Promise<ReceivePacket> {
     let eofCount = 0;
     const timeout = this.client.config.timeout || 1000;
 
-    while (this.conn) {
-      const packet = await new ReceivePacket().parse(this.conn);
+    while (this.conn!) {
+      const packet = await new ReceivePacket().parse(this.conn!);
       if (packet) {
         if (packet.type === "ERR") {
           packet.body.skip(1);
           const error = parseError(packet.body, this);
           throw new Error(error.message);
         }
-        return packet;
       } else {
-        if (eofCount++ * 100 >= timeout) new Error("Read packet timeout");
         await delay(100);
+        if (eofCount++ * 100 >= timeout) {
+          throw new ResponseTimeoutError("Read packet timeout");
+        }
       }
+      return packet!;
     }
+    throw new Error("Not connected");
   }
 
   /**
@@ -179,7 +180,6 @@ export class Connection {
     const data = buildQuery(sql, params);
     await new SendPacket(data, 0).send(this.conn);
     let receive = await this.nextPacket();
-    if (!receive) throw new ResponseTimeoutError("Execute failed");
     if (receive.type === "OK") {
       receive.body.skip(1);
       return {
@@ -205,7 +205,6 @@ export class Connection {
 
     while (true) {
       receive = await this.nextPacket();
-      if (!receive) throw new Error("Execute failed");
       if (receive.type === "EOF") {
         break;
       } else {

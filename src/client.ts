@@ -88,7 +88,7 @@ export class Client {
    * @param params query params
    */
   async query(sql: string, params?: any[]): Promise<any> {
-    return this.useConnection(async (connection) => {
+    return await this.useConnection(async (connection) => {
       return await connection.query(sql, params);
     });
   }
@@ -99,7 +99,7 @@ export class Client {
    * @param params query params
    */
   async execute(sql: string, params?: any[]): Promise<ExecuteResult> {
-    return this.useConnection(async (connection) => {
+    return await this.useConnection(async (connection) => {
       return await connection.execute(sql, params);
     });
   }
@@ -132,7 +132,7 @@ export class Client {
    * @param processor transation processor
    */
   async transaction<T = any>(processor: TransactionProcessor<T>): Promise<T> {
-    return this.useConnection(async (connection) => {
+    return await this.useConnection(async (connection) => {
       try {
         await connection.execute("BEGIN");
         const result = await processor(connection);
