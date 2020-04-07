@@ -80,11 +80,15 @@ export class Connection {
     while (retry--) {
       try {
         await Promise.race([
-          this._connect().finally(() => clearTimeout(timer)),
+          this._connect().finally(() => {
+            clearTimeout(timer);
+            timer = 0;
+          }),
           new Promise(
             (_, reject) =>
               (timer = setTimeout(() => {
                 this.conn && this.conn.close();
+                timer = 0;
                 reject(new Error("connect timeout"));
               }, timeout))
           ),
@@ -97,6 +101,7 @@ export class Connection {
         log.info(`retrying ${retry}`);
       }
     }
+    if (timer) clearTimeout(timer);
     if (this.state !== ConnectionState.CONNECTED) {
       throw new Error("connect fail");
     }
