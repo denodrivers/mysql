@@ -4,20 +4,31 @@ on: [push]
 
 jobs:
   build:
-    services:
-      mysql:
-        image: mysql:5.6
-        ports:
-          - 3307:3306
-        env:
-          MYSQL_ALLOW_EMPTY_PASSWORD: true
-
     runs-on: ubuntu-latest
-    
+    strategy:
+      matrix:
+        DB_VERSION:
+          [
+            mysql:5.5,
+            mysql:5.6,
+            mysql:5.7,
+            mysql:8,
+            mysql:latest,
+            mariadb:5.5,
+            mariadb:10.2,
+            mariadb:10.3,
+            mariadb:10.4,
+            mariadb:latest,
+          ]
+
     steps:
-    - uses: actions/checkout@v1
-    - uses: denolib/deno-action@0.17.0
-      with:
-        args: run -A test.ts
-      env:
-        DB_PORT: 3307
+      - uses: actions/checkout@v1
+      - name: Install Deno
+        uses: denolib/setup-deno@master
+        with:
+          deno-version: 0.39.0
+      - name: test ts
+        run: |
+          docker run -d -p $DB_PORT:3306 -e MYSQL_ALLOW_EMPTY_PASSWORD=true $DB_VERSION
+          sleep 10
+          deno run --allow-all ./test.ts

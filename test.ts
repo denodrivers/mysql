@@ -3,7 +3,7 @@ import {
   assertThrowsAsync,
 } from "https://deno.land/std@v0.35.0/testing/asserts.ts";
 import { WriteError } from "./src/constant/errors.ts";
-import { testWithClient } from "./test.util.ts";
+import { createTestDB, testWithClient } from "./test.util.ts";
 
 testWithClient(async function testCreateDb(client) {
   await client.query(`CREATE DATABASE IF NOT EXISTS enok`);
@@ -145,4 +145,5 @@ testWithClient(async function testTransactionRollback(client) {
   assertEquals([{ name: "transaction1" }], result);
 });
 
+await createTestDB();
 await Deno.runTests({ failFast: true });
