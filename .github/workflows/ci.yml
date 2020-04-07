@@ -28,5 +28,5 @@ jobs:
       - name: test ts
         run: |
           docker run -d -p 3306:3306 -e MYSQL_ALLOW_EMPTY_PASSWORD=true ${{ matrix.DB_VERSION }}
-          sleep 10
+          ./.github/workflows/wait-for-mysql.sh
           deno run --allow-all ./test.ts
