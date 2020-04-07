@@ -1,19 +1,15 @@
 import {
   assertEquals,
-  assertThrowsAsync
+  assertThrowsAsync,
 } from "https://deno.land/std@v0.35.0/testing/asserts.ts";
-import { Client } from "./mod.ts";
 import { WriteError } from "./src/constant/errors.ts";
+import { testWithClient } from "./test.util.ts";
 
-let client: Client;
-
-const { test, runTests } = Deno;
-
-test(async function testCreateDb() {
+testWithClient(async function testCreateDb(client) {
   await client.query(`CREATE DATABASE IF NOT EXISTS enok`);
 });
 
-test(async function testCreateTable() {
+testWithClient(async function testCreateTable(client) {
   await client.query(`DROP TABLE IF EXISTS users`);
   await client.query(`
         CREATE TABLE users (
@@ -26,19 +22,19 @@ test(async function testCreateTable() {
     `);
 });
 
-test(async function testInsert() {
+testWithClient(async function testInsert(client) {
   let result = await client.execute(`INSERT INTO users(name) values(?)`, [
-    "manyuanrong"
+    "manyuanrong",
   ]);
   assertEquals(result, { affectedRows: 1, lastInsertId: 1 });
   result = await client.execute(`INSERT INTO users ?? values ?`, [
     ["id", "name"],
-    [2, "MySQL"]
+    [2, "MySQL"],
   ]);
   assertEquals(result, { affectedRows: 1, lastInsertId: 2 });
 });
 
-test(async function testUpdate() {
+testWithClient(async function testUpdate(client) {
   let result = await client.execute(
     `update users set ?? = ?, ?? = ? WHERE id = ?`,
     ["name", "MYR", "created_at", new Date(), 1]
@@ -46,7 +42,7 @@ test(async function testUpdate() {
   assertEquals(result, { affectedRows: 1, lastInsertId: 0 });
 });
 
-test(async function testQuery() {
+testWithClient(async function testQuery(client) {
   let result = await client.query(
     "select ??,`is_top`,`name` from ?? where id = ?",
     ["id", "users", 1]
@@ -54,64 +50,75 @@ test(async function testQuery() {
   assertEquals(result, [{ id: 1, name: "MYR", is_top: false }]);
 });
 
-test(async function testQueryErrorOccurred() {
-  assertEquals(1, client.poolSize);
+testWithClient(async function testQueryErrorOccurred(client) {
+  assertEquals(client.pool, {
+    size: 0,
+    maxSize: client.config.poolSize,
+    available: 0,
+  });
   await assertThrowsAsync(
     () => client.query("select unknownfield from `users`"),
     Error
   );
   await client.query("select 1");
-  assertEquals(client.poolSize, 1);
+  assertEquals(client.pool, {
+    size: 1,
+    maxSize: client.config.poolSize,
+    available: 1,
+  });
 });
 
-test(async function testQueryList() {
+testWithClient(async function testQueryList(client) {
   const sql = "select ??,?? from ??";
   let result = await client.query(sql, ["id", "name", "users"]);
   assertEquals(result, [
     { id: 1, name: "MYR" },
-    { id: 2, name: "MySQL" }
+    { id: 2, name: "MySQL" },
   ]);
 });
 
-test(async function testDelete() {
+testWithClient(async function testDelete(client) {
   let result = await client.execute(`delete from users where ?? = ?`, [
     "id",
-    1
+    1,
   ]);
   assertEquals(result, { affectedRows: 1, lastInsertId: 0 });
 });
 
-test(async function testPool() {
-  assertEquals(1, client.poolLength);
-  assertEquals(1, client.poolSize);
-  const expect = new Array(10).fill([
-    {
-      "1": 1
-    }
-  ]);
+testWithClient(async function testPool(client) {
+  assertEquals(client.pool, {
+    maxSize: client.config.poolSize,
+    available: 0,
+    size: 0,
+  });
+  const expect = new Array(10).fill([{ "1": 1 }]);
   const result = await Promise.all(expect.map(() => client.query(`select 1`)));
-  assertEquals(client.config.poolSize, client.poolLength);
-  assertEquals(client.config.poolSize, client.poolSize);
+
+  assertEquals(client.pool, {
+    maxSize: client.config.poolSize,
+    available: 3,
+    size: 3,
+  });
   assertEquals(result, expect);
 });
 
-test(async function testQueryOnClosed() {
+testWithClient(async function testQueryOnClosed(client) {
   for (const i of [0, 0, 0]) {
     await assertThrowsAsync(async () => {
-      await client.transaction(async conn => {
-        await conn.close();
+      await client.transaction(async (conn) => {
+        conn.close();
         await conn.query("SELECT 1");
       });
     }, WriteError);
   }
-  assertEquals(client.poolSize, 0);
-  const result = client.query("select 1");
+  assertEquals(client.pool?.size, 0);
+  await client.query("select 1");
 });
 
-test(async function testTransactionSuccess() {
-  const success = await client.transaction(async connection => {
+testWithClient(async function testTransactionSuccess(client) {
+  const success = await client.transaction(async (connection) => {
     await connection.execute("insert into users(name) values(?)", [
-      "transaction1"
+      "transaction1",
     ]);
     await connection.execute("delete from users where id = ?", [2]);
     return true;
@@ -121,14 +128,14 @@ test(async function testTransactionSuccess() {
   assertEquals([{ name: "transaction1", id: 3 }], result);
 });
 
-test(async function testTransactionRollback() {
+testWithClient(async function testTransactionRollback(client) {
   let success;
   await assertThrowsAsync(async () => {
-    success = await client.transaction(async connection => {
+    success = await client.transaction(async (connection) => {
       // Insert an existing id
       await connection.execute("insert into users(name,id) values(?,?)", [
         "transaction2",
-        3
+        3,
       ]);
       return true;
     });
@@ -138,34 +145,4 @@ test(async function testTransactionRollback() {
   assertEquals([{ name: "transaction1" }], result);
 });
 
-async function main() {
-  const { DB_PORT, DB_NAME, DB_PASSWORD, DB_USER, DB_HOST } = Deno.env();
-  const port = DB_PORT ? parseInt(DB_PORT) : 3306;
-  const db = DB_NAME || "test";
-  const password = DB_PASSWORD;
-  const username = DB_USER || "root";
-  const hostname = DB_HOST || "127.0.0.1";
-
-  const config = {
-    timeout: 10000,
-    poolSize: 3,
-    debug: false,
-    hostname,
-    username,
-    port,
-    db,
-    password
-  };
-  client = await new Client().connect({
-    ...config,
-    poolSize: 1,
-    db: undefined
-  });
-  await client.execute(`CREATE DATABASE IF NOT EXISTS ${db}`);
-  await client.close();
-  client = await new Client().connect(config);
-  await runTests();
-  console.log("end");
-}
-
-main();
+await Deno.runTests({ failFast: true });

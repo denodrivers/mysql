@@ -1,7 +1,7 @@
 import { Connection, ExecuteResult } from "./connection.ts";
-import { DeferredStack } from "./deferred.ts";
-import { config as logConfig, log } from "./logger.ts";
 import { WriteError } from "./constant/errors.ts";
+import { DeferredStack } from "./deferred.ts";
+import { log } from "./logger.ts";
 
 /**
  * Clinet Config
@@ -48,14 +48,15 @@ export class Client {
     return connection;
   }
 
-  /** get size of the pool, Number of connections created */
-  get poolSize() {
-    return this._pool?.size ?? 0;
-  }
-
-  /** get length of the pool, Number of connections available */
-  get poolLength() {
-    return this._pool?.length ?? 0;
+  /** get pool info */
+  get pool() {
+    if (this._pool) {
+      return {
+        size: this._pool.size,
+        maxSize: this._pool.maxSize,
+        available: this._pool.available,
+      };
+    }
   }
 
   /**
@@ -64,16 +65,12 @@ export class Client {
    * @returns Clinet instance
    */
   async connect(config: ClientConfig): Promise<Client> {
-    await logConfig({
-      debug: !!config.debug,
-      logFile: "mysql.log"
-    });
     this.config = {
       hostname: "127.0.0.1",
       username: "root",
       port: 3306,
       poolSize: 1,
-      ...config
+      ...config,
     };
     Object.freeze(this.config);
     this._connections = [];
@@ -165,6 +162,6 @@ export class Client {
    * close connection
    */
   async close() {
-    await Promise.all(this._connections.map(conn => conn.close()));
+    await Promise.all(this._connections.map((conn) => conn.close()));
   }
 }

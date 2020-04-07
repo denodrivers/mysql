@@ -1,38 +1,14 @@
-/** @ignore */
-export interface Deferred<T> {
-  promise: Promise<T>;
-  resolve: (t?: T) => void;
-  reject: (e?: any) => void;
-}
-
-/** @ignore */
-export interface DeferredStackItemCreator<T> {
-  (): Promise<T>;
-}
-
-/** @ignore */
-export function defer<T>(): Deferred<T> {
-  let reject: (arg?: any) => void;
-  let resolve: (arg?: any) => void;
-  const promise = new Promise<T>((res, rej) => {
-    resolve = res;
-    reject = rej;
-  });
-  return {
-    promise,
-    reject: reject!,
-    resolve: resolve!
-  };
-}
+import { Deferred, deferred } from "../deps.ts";
 
 /** @ignore */
 export class DeferredStack<T> {
   private _queue: Deferred<T>[] = [];
   private _size = 0;
+
   constructor(
-    readonly poolSize: number,
+    readonly _maxSize: number,
     private _array: T[] = [],
-    private readonly create: DeferredStackItemCreator<T>
+    private readonly creator: () => Promise<T>
   ) {
     this._size = _array.length;
   }
@@ -41,21 +17,25 @@ export class DeferredStack<T> {
     return this._size;
   }
 
-  get length(): number {
+  get maxSize(): number {
+    return this._maxSize;
+  }
+
+  get available(): number {
     return this._array.length;
   }
 
   async pop(): Promise<T> {
     if (this._array.length) {
       return this._array.pop()!;
-    } else if (this._size < this.poolSize) {
+    } else if (this._size < this._maxSize) {
       this._size++;
-      const item = await this.create();
+      const item = await this.creator();
       return item;
     }
-    const d = defer<T>();
-    this._queue.push(d);
-    await d.promise;
+    const defer = deferred<T>();
+    this._queue.push(defer);
+    await defer;
     return this._array.pop()!;
   }
 
