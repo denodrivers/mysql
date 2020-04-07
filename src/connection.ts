@@ -75,36 +75,7 @@ export class Connection {
 
   /** Connect to database */
   async connect(): Promise<void> {
-    let { retry = 3, timeout = 10000 } = this.client.config;
-    let timer = 0;
-    while (retry--) {
-      try {
-        await Promise.race([
-          this._connect().finally(() => {
-            clearTimeout(timer);
-            timer = 0;
-          }),
-          new Promise(
-            (_, reject) =>
-              (timer = setTimeout(() => {
-                this.conn && this.conn.close();
-                timer = 0;
-                reject(new Error("connect timeout"));
-              }, timeout))
-          ),
-        ]);
-        if (this.state == ConnectionState.CONNECTED) {
-          break;
-        }
-      } catch (err) {
-        log.error(err.message);
-        log.info(`retrying ${retry}`);
-      }
-    }
-    if (timer) clearTimeout(timer);
-    if (this.state !== ConnectionState.CONNECTED) {
-      throw new Error("connect fail");
-    }
+    await this._connect();
   }
 
   private async nextPacket(): Promise<ReceivePacket> {
