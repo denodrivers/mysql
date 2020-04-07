@@ -1,9 +1,9 @@
 # deno_mysql
 
-[![Build Status](https://www.travis-ci.org/manyuanrong/deno_mysql.svg?branch=master)](https://www.travis-ci.org/manyuanrong/deno_mysql)
+[![Build Status](https://github.com/manyuanrong/deno_mysql/workflows/ci/badge.svg?branch=master)](https://github.com/manyuanrong/deno_mysql/actions)
 ![GitHub](https://img.shields.io/github/license/manyuanrong/deno_mysql.svg)
 ![GitHub release](https://img.shields.io/github/release/manyuanrong/deno_mysql.svg)
-![(Deno)](https://img.shields.io/badge/deno-0.27.0-green.svg)
+![(Deno)](https://img.shields.io/badge/deno-0.39.0-green.svg)
 
 MySQL and MariaDB (5.5 and 10.2+) database driver for Deno.
 
@@ -39,7 +39,7 @@ const client = await new Client().connect({
   hostname: "127.0.0.1",
   username: "root",
   db: "dbname",
-  password: "password"
+  password: "password",
 });
 ```
 
@@ -56,7 +56,7 @@ const client = await new Client().connect({
   username: "root",
   db: "dbname",
   poolSize: 3, // connection limit
-  password: "password"
+  password: "password",
 });
 ```
 
@@ -85,7 +85,7 @@ await client.execute(`
 
 ```ts
 let result = await client.execute(`INSERT INTO users(name) values(?)`, [
-  "manyuanrong"
+  "manyuanrong",
 ]);
 console.log(result);
 // { affectedRows: 1, lastInsertId: 1 }
@@ -111,9 +111,7 @@ console.log(result);
 
 ```ts
 const username = "manyuanrong";
-const users = await client.query(
-  `select * from users`
-);
+const users = await client.query(`select * from users`);
 const queryWithParams = await client.query(
   "select ??,name from ?? where id = ?",
   ["id", "users", 1]
@@ -124,7 +122,7 @@ console.log(users, queryWithParams);
 ### transaction
 
 ```ts
-const users = await client.transaction(async conn => {
+const users = await client.transaction(async (conn) => {
   await conn.excute(`insert into users(name) values(?)`, ["test"]);
   return await conn.query(`select ?? from ??`, ["name", "users"]);
 });
