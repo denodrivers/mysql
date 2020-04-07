@@ -1,6 +1,6 @@
 import { delay } from "../deps.ts";
 import { Client } from "./client.ts";
-import { NoResponseError } from "./constant/errors.ts";
+import { ResponseTimeoutError } from "./constant/errors.ts";
 import { log } from "./logger.ts";
 import { buildAuth } from "./packets/builders/auth.ts";
 import { buildQuery } from "./packets/builders/query.ts";
@@ -49,7 +49,7 @@ export class Connection {
     });
 
     let receive = await this.nextPacket();
-    if (!receive) throw new Error("Connect failed, No respond");
+    if (!receive) throw new ResponseTimeoutError("Connect failed, No respond");
     const handshakePacket = parseHandshake(receive.body);
     const data = buildAuth(handshakePacket, {
       username: this.client.config.username ?? "",
@@ -62,7 +62,7 @@ export class Connection {
     this.capabilities = handshakePacket.serverCapabilities;
 
     receive = await this.nextPacket();
-    if (!receive) throw new Error("Connect failed");
+    if (!receive) throw new ResponseTimeoutError("Connect failed");
     const header = receive.body.readUint8();
     if (header === 0xff) {
       const error = parseError(receive.body, this);
@@ -118,7 +118,7 @@ export class Connection {
         }
         return packet;
       } else {
-        if (eofCount * 100 >= timeout) new Error("Read packet timeout");
+        if (eofCount++ * 100 >= timeout) new Error("Read packet timeout");
         await delay(100);
       }
     }
@@ -179,7 +179,7 @@ export class Connection {
     const data = buildQuery(sql, params);
     await new SendPacket(data, 0).send(this.conn);
     let receive = await this.nextPacket();
-    if (!receive) throw new NoResponseError("Execute failed");
+    if (!receive) throw new ResponseTimeoutError("Execute failed");
     if (receive.type === "OK") {
       receive.body.skip(1);
       return {

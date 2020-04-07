@@ -1,5 +1,5 @@
 import { Connection, ExecuteResult } from "./connection.ts";
-import { NoResponseError, WriteError } from "./constant/errors.ts";
+import { ResponseTimeoutError, WriteError } from "./constant/errors.ts";
 import { DeferredStack } from "./deferred.ts";
 import { log } from "./logger.ts";
 
@@ -114,7 +114,10 @@ export class Client {
       this._pool.push(connection);
       return result;
     } catch (error) {
-      if (error instanceof WriteError || error instanceof NoResponseError) {
+      if (
+        error instanceof WriteError ||
+        error instanceof ResponseTimeoutError
+      ) {
         this._pool.reduceSize();
       } else {
         this._pool.push(connection);

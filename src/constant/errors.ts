@@ -4,4 +4,8 @@ export class WriteError extends Error {
   }
 }
 
-export class NoResponseError extends Error {}
+export class ResponseTimeoutError extends Error {
+  constructor(msg?: string) {
+    super(msg);
+  }
+}
