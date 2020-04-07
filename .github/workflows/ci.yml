@@ -27,6 +27,6 @@ jobs:
           deno-version: 0.39.0
       - name: test ts
         run: |
-          docker run -d -p $DB_PORT:3306 -e MYSQL_ALLOW_EMPTY_PASSWORD=true $DB_VERSION
+          docker run -d -p 3306:3306 -e MYSQL_ALLOW_EMPTY_PASSWORD=true ${{ matrix.DB_VERSION }}
           sleep 10
           deno run --allow-all ./test.ts
