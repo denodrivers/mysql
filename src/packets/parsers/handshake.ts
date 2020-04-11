@@ -45,7 +45,7 @@ export function parseHandshake(reader: BufferReader): HandshakeBody {
       0
     ) {
       seedWriter.writeBuffer(
-        reader.readBuffer(Math.max(13, authPluginDataLength) - 8)
+        reader.readBuffer(Math.max(13, authPluginDataLength - 8))
       );
     }
 
