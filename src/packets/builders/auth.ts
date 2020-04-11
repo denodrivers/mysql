@@ -34,7 +34,7 @@ export function buildAuth(
     const writer = new BufferWriter(new Uint8Array(1000));
     writer
       .writeUint32(clientParam)
-      .writeUint32(265 * 256 * 256 - 1)
+      .writeUint32(2 ** 24 - 1)
       .write(Charset.UTF8_GENERAL_CI)
       .skip(23)
       .writeNullTerminatedString(params.username);
