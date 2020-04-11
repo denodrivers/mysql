@@ -71,6 +71,10 @@ export class Connection {
       log.info(`connected to ${this.client.config.hostname}`);
       this.state = ConnectionState.CONNECTED;
     }
+
+    if (this.client.config.charset) {
+      await this.execute(`SET NAMES ${this.client.config.charset}`);
+    }
   }
 
   /** Connect to database */

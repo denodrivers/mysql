@@ -21,12 +21,10 @@ export interface ClientConfig {
   debug?: boolean;
   /** Connect timeout */
   timeout?: number;
-  /** TODO: auto reconnect */
-  reconnect?: boolean;
-  /** Number of retries that failed in the link process */
-  retry?: number;
   /** Connection pool size default 1 */
   poolSize?: number;
+  /** charset */
+  charset?: string;
 }
 
 /** Transaction processor */

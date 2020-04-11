@@ -15,6 +15,7 @@ const config = {
   username,
   port,
   db,
+  charset: "utf8mb4",
   password,
 };
 
