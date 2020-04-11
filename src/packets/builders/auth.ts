@@ -1,4 +1,4 @@
-import { auth } from "../../auth/mysql_native_password.ts";
+import auth from "../../auth.ts";
 import { BufferWriter } from "../../buffer.ts";
 import ServerCapabilities from "../../constant/capabilities.ts";
 import { Charset } from "../../constant/charset.ts";
@@ -39,7 +39,11 @@ export function buildAuth(
       .skip(23)
       .writeNullTerminatedString(params.username);
     if (params.password) {
-      const authData = auth(params.password, packet.seed);
+      const authData = auth(
+        packet.authPluginName,
+        params.password,
+        packet.seed
+      );
       if (
         clientParam &
           ServerCapabilities.CLIENT_PLUGIN_AUTH_LENENC_CLIENT_DATA ||
