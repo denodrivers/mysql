@@ -28,6 +28,7 @@ On this basis, there is also an ORM library: [Deno Simple Orm](https://github.co
 - [x] Test case
 - [ ] Support MariaDB 10.0
 - [ ] Support MariaDB 10.1
+- [ ] Support caching_sha2_password auth plugin (mysql8 default)
 
 ## API
 
