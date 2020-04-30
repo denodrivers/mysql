@@ -42,10 +42,10 @@ export function parseHandshake(reader: BufferReader): HandshakeBody {
 
     if (
       (serverCapabilities & ServerCapabilities.CLIENT_SECURE_CONNECTION) !=
-      0
+        0
     ) {
       seedWriter.writeBuffer(
-        reader.readBuffer(Math.max(13, authPluginDataLength - 8))
+        reader.readBuffer(Math.max(13, authPluginDataLength - 8)),
       );
     }
 
@@ -62,6 +62,6 @@ export function parseHandshake(reader: BufferReader): HandshakeBody {
     serverCapabilities,
     characterSet,
     statusFlags,
-    authPluginName
+    authPluginName,
   };
 }

@@ -19,7 +19,7 @@ import {
   MYSQL_TYPE_TIMESTAMP2,
   MYSQL_TYPE_TINY,
   MYSQL_TYPE_VARCHAR,
-  MYSQL_TYPE_VAR_STRING
+  MYSQL_TYPE_VAR_STRING,
 } from "../../constant/mysql_types.ts";
 
 /** @ignore */
@@ -66,7 +66,7 @@ export function parseField(reader: BufferReader): FieldInfo {
     fieldType,
     encoding,
     decimals,
-    defaultVal
+    defaultVal,
   };
 }
 

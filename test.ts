@@ -1,7 +1,7 @@
 import {
   assertEquals,
   assertThrowsAsync,
-} from "https://deno.land/std@v0.39.0/testing/asserts.ts";
+} from "./deps.ts";
 import { WriteError } from "./src/constant/errors.ts";
 import { createTestDB, testWithClient } from "./test.util.ts";
 
@@ -37,7 +37,7 @@ testWithClient(async function testInsert(client) {
 testWithClient(async function testUpdate(client) {
   let result = await client.execute(
     `update users set ?? = ?, ?? = ? WHERE id = ?`,
-    ["name", "MYR🦕", "created_at", new Date(), 1]
+    ["name", "MYR🦕", "created_at", new Date(), 1],
   );
   assertEquals(result, { affectedRows: 1, lastInsertId: 0 });
 });
@@ -45,7 +45,7 @@ testWithClient(async function testUpdate(client) {
 testWithClient(async function testQuery(client) {
   let result = await client.query(
     "select ??,`is_top`,`name` from ?? where id = ?",
-    ["id", "users", 1]
+    ["id", "users", 1],
   );
   assertEquals(result, [{ id: 1, name: "MYR🦕", is_top: false }]);
 });
@@ -58,7 +58,7 @@ testWithClient(async function testQueryErrorOccurred(client) {
   });
   await assertThrowsAsync(
     () => client.query("select unknownfield from `users`"),
-    Error
+    Error,
   );
   await client.query("select 1");
   assertEquals(client.pool, {
@@ -146,4 +146,3 @@ testWithClient(async function testTransactionRollback(client) {
 });
 
 await createTestDB();
-await Deno.runTests({ failFast: true });

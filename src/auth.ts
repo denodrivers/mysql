@@ -29,7 +29,7 @@ function cachingSha2Password(password: string, seed: Uint8Array): Uint8Array {
 export default function auth(
   authPluginName: string,
   password: string,
-  seed: Uint8Array
+  seed: Uint8Array,
 ) {
   switch (authPluginName) {
     case "mysql_native_password":
@@ -38,7 +38,6 @@ export default function auth(
     case "caching_sha2_password":
     // TODO
     // return cachingSha2Password(password, seed);
-
     default:
       throw new Error("Not supported");
   }

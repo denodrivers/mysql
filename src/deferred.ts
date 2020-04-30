@@ -8,7 +8,7 @@ export class DeferredStack<T> {
   constructor(
     readonly _maxSize: number,
     private _array: T[] = [],
-    private readonly creator: () => Promise<T>
+    private readonly creator: () => Promise<T>,
   ) {
     this._size = _array.length;
   }

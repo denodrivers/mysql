@@ -13,12 +13,12 @@ export interface ErrorPacket {
 /** @ignore */
 export function parseError(
   reader: BufferReader,
-  conn: Connection
+  conn: Connection,
 ): ErrorPacket {
   const code = reader.readUint16();
   const packet: ErrorPacket = {
     code,
-    message: ""
+    message: "",
   };
   if (conn.capabilities & ServerCapabilities.CLIENT_PROTOCOL_41) {
     packet.sqlStateMarker = reader.readUint8();

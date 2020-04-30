@@ -42,15 +42,15 @@ export class ReceivePacket {
     const header = new BufferReader(new Uint8Array(4));
     let readCount = 0;
     let nread = await reader.read(header.buffer);
-    if (nread === Deno.EOF) return null;
+    if (nread === null) return null;
     readCount = nread;
     this.header = {
       size: header.readUints(3),
-      no: header.readUint8()
+      no: header.readUint8(),
     };
     this.body = new BufferReader(new Uint8Array(this.header.size));
     nread = await reader.read(this.body.buffer);
-    if (nread === Deno.EOF) return null;
+    if (nread === null) return null;
     readCount += nread;
 
     switch (this.body.buffer[0]) {
@@ -73,9 +73,9 @@ export class ReceivePacket {
       data.set(header.buffer);
       data.set(this.body.buffer, 4);
       log.debug(
-        `receive: ${readCount}B, size = ${this.header.size}, no = ${
-          this.header.no
-        } \n${byteFormat(data)}\n`
+        `receive: ${readCount}B, size = ${this.header.size}, no = ${this.header.no} \n${
+          byteFormat(data)
+        }\n`,
       );
     });
 

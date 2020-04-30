@@ -1,4 +1,4 @@
-export { decode, encode } from "https://deno.land/std@v0.39.0/encoding/utf8.ts";
+export { decode, encode } from "https://deno.land/std@v0.42.0/encoding/utf8.ts";
 export { format as byteFormat } from "https://deno.land/x/bytes_formater@1.1.0/mod.ts";
 export { replaceParams } from "https://deno.land/x/sql_builder@1.3.5/util.ts";
 export { Hash } from "https://deno.land/x/checksum@1.2.0/mod.ts";
@@ -8,4 +8,9 @@ export {
   deferred,
   Deferred,
   delay,
-} from "https://deno.land/std@v0.39.0/util/async.ts";
+} from "https://deno.land/std@v0.42.0/util/async.ts";
+
+export {
+  assertEquals,
+  assertThrowsAsync,
+} from "https://deno.land/std@v0.42.0/testing/asserts.ts";
