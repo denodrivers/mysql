@@ -18,15 +18,15 @@ export async function config(config: { debug: boolean; logFile: string }) {
       console: new log.handlers.ConsoleHandler(config.debug ? "DEBUG" : "INFO"),
       file: new log.handlers.FileHandler("WARNING", {
         filename: config.logFile,
-        formatter: "{levelName} {msg}"
-      })
+        formatter: "{levelName} {msg}",
+      }),
     },
 
     loggers: {
       default: {
         level: "DEBUG",
-        handlers: ["console", "file"]
-      }
-    }
+        handlers: ["console", "file"],
+      },
+    },
   });
 }

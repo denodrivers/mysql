@@ -75,7 +75,7 @@ export class Client {
     this._pool = new DeferredStack<Connection>(
       this.config.poolSize || 10,
       this._connections,
-      this.createConnection.bind(this)
+      this.createConnection.bind(this),
     );
     return this;
   }

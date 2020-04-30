@@ -1,6 +1,6 @@
 import { Client } from "./mod.ts";
 
-const { DB_PORT, DB_NAME, DB_PASSWORD, DB_USER, DB_HOST } = Deno.env();
+const { DB_PORT, DB_NAME, DB_PASSWORD, DB_USER, DB_HOST } = Deno.env.toObject();
 const port = DB_PORT ? parseInt(DB_PORT) : 3306;
 const db = DB_NAME || "test";
 const password = DB_PASSWORD;
