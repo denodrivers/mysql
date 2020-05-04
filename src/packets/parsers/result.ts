@@ -103,15 +103,15 @@ function convertType(field: FieldInfo, val: string): any {
     case MYSQL_TYPE_VARCHAR:
     case MYSQL_TYPE_VAR_STRING:
     case MYSQL_TYPE_STRING:
+    case MYSQL_TYPE_TIME:
+    case MYSQL_TYPE_TIME2:
       return val;
     case MYSQL_TYPE_DATE:
     case MYSQL_TYPE_TIMESTAMP:
-    case MYSQL_TYPE_TIME:
     case MYSQL_TYPE_DATETIME:
     case MYSQL_TYPE_NEWDATE:
     case MYSQL_TYPE_TIMESTAMP2:
     case MYSQL_TYPE_DATETIME2:
-    case MYSQL_TYPE_TIME2:
       return new Date(val);
     default:
       return val;

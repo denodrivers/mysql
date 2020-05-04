@@ -77,6 +77,12 @@ testWithClient(async function testQueryList(client) {
   ]);
 });
 
+testWithClient(async function testQueryTime(client) {
+  const sql = `SELECT CAST("09:04:10" AS time) as time`;
+  let result = await client.query(sql);
+  assertEquals(result, [{ time: "09:04:10" }]);
+});
+
 testWithClient(async function testDelete(client) {
   let result = await client.execute(`delete from users where ?? = ?`, [
     "id",
