@@ -24,11 +24,11 @@ jobs:
       - name: Install Deno
         uses: denolib/setup-deno@master
         with:
-          deno-version: 0.42.0
+          deno-version: 1.0.0
       - name: check fmt
         run: deno fmt --check
       - name: test ts
         run: |
           docker run -d -p 3306:3306 -e MYSQL_ALLOW_EMPTY_PASSWORD=true ${{ matrix.DB_VERSION }}
           ./.github/workflows/wait-for-mysql.sh
-          deno run --allow-all ./test.ts
+          deno test --allow-all ./test.ts
