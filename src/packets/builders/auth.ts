@@ -11,19 +11,19 @@ export function buildAuth(
 ): Uint8Array {
   let clientParam: number =
     (params.db ? ServerCapabilities.CLIENT_CONNECT_WITH_DB : 0) |
-      ServerCapabilities.CLIENT_PLUGIN_AUTH |
-      ServerCapabilities.CLIENT_LONG_PASSWORD |
-      ServerCapabilities.CLIENT_PROTOCOL_41 |
-      ServerCapabilities.CLIENT_TRANSACTIONS |
-      ServerCapabilities.CLIENT_MULTI_RESULTS |
-      ServerCapabilities.CLIENT_SECURE_CONNECTION;
+    ServerCapabilities.CLIENT_PLUGIN_AUTH |
+    ServerCapabilities.CLIENT_LONG_PASSWORD |
+    ServerCapabilities.CLIENT_PROTOCOL_41 |
+    ServerCapabilities.CLIENT_TRANSACTIONS |
+    ServerCapabilities.CLIENT_MULTI_RESULTS |
+    ServerCapabilities.CLIENT_SECURE_CONNECTION;
 
   if (packet.serverCapabilities & ServerCapabilities.CLIENT_LONG_FLAG) {
     clientParam |= ServerCapabilities.CLIENT_LONG_FLAG;
   }
   if (
     packet.serverCapabilities &
-      ServerCapabilities.CLIENT_PLUGIN_AUTH_LENENC_CLIENT_DATA
+    ServerCapabilities.CLIENT_PLUGIN_AUTH_LENENC_CLIENT_DATA
   ) {
     clientParam |= ServerCapabilities.CLIENT_PLUGIN_AUTH_LENENC_CLIENT_DATA;
   }
