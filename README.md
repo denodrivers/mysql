@@ -3,7 +3,7 @@
 [![Build Status](https://github.com/manyuanrong/deno_mysql/workflows/ci/badge.svg?branch=master)](https://github.com/manyuanrong/deno_mysql/actions)
 ![GitHub](https://img.shields.io/github/license/manyuanrong/deno_mysql.svg)
 ![GitHub release](https://img.shields.io/github/release/manyuanrong/deno_mysql.svg)
-![(Deno)](https://img.shields.io/badge/deno-0.39.0-green.svg)
+![(Deno)](https://img.shields.io/badge/deno-1.0.0-green.svg)
 
 MySQL and MariaDB (5.5 and 10.2+) database driver for Deno.
 
