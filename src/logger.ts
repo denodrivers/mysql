@@ -1,4 +1,5 @@
-import * as log from "https://deno.land/x/std/log/mod.ts";
+import { log } from "../deps.ts";
+
 export { log };
 
 let isDebug = false;
