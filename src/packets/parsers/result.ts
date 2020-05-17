@@ -89,19 +89,26 @@ function convertType(field: FieldInfo, val: string): any {
   }
   switch (fieldType) {
     case MYSQL_TYPE_DECIMAL:
-      return val; // #42 MySQL's decimal type cannot be accurately represented by the Number.
     case MYSQL_TYPE_DOUBLE:
     case MYSQL_TYPE_FLOAT:
     case MYSQL_TYPE_DATETIME2:
-    case MYSQL_TYPE_NEWDECIMAL:
       return parseFloat(val);
+    case MYSQL_TYPE_NEWDECIMAL:
+      return val; // #42 MySQL's decimal type cannot be accurately represented by the Number.
     case MYSQL_TYPE_TINY:
     case MYSQL_TYPE_SHORT:
     case MYSQL_TYPE_LONG:
     case MYSQL_TYPE_INT24:
       return parseInt(val);
     case MYSQL_TYPE_LONGLONG:
-      return BigInt(val); // #42 MySQL's bigint type cannot be accurately represented by the Number.
+      if (
+        Number(val) < Number.MIN_SAFE_INTEGER ||
+        Number(val) > Number.MAX_SAFE_INTEGER
+      ) {
+        return BigInt(val);
+      } else {
+        return parseInt(val);
+      }
     case MYSQL_TYPE_VARCHAR:
     case MYSQL_TYPE_VAR_STRING:
     case MYSQL_TYPE_STRING:
