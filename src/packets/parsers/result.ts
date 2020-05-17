@@ -101,7 +101,14 @@ function convertType(field: FieldInfo, val: string): any {
     case MYSQL_TYPE_INT24:
       return parseInt(val);
     case MYSQL_TYPE_LONGLONG:
-      return BigInt(val); // #42 MySQL's bigint type cannot be accurately represented by the Number.
+      if (
+        Number(val) < Number.MIN_SAFE_INTEGER ||
+        Number(val) > Number.MAX_SAFE_INTEGER
+      ) {
+        return BigInt(val);
+      } else {
+        return parseInt(val);
+      }
     case MYSQL_TYPE_VARCHAR:
     case MYSQL_TYPE_VAR_STRING:
     case MYSQL_TYPE_STRING:
