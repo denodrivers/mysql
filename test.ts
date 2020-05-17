@@ -83,6 +83,42 @@ testWithClient(async function testQueryTime(client) {
   assertEquals(result, [{ time: "09:04:10" }]);
 });
 
+testWithClient(async function testQueryBigint(client) {
+  await client.query(`DROP TABLE IF EXISTS test_bigint`);
+  await client.query(`CREATE TABLE test_bigint (
+    id int(11) NOT NULL AUTO_INCREMENT,
+    bigint_column bigint NOT NULL,
+    PRIMARY KEY (id)
+  ) ENGINE=MEMORY DEFAULT CHARSET=utf8mb4`);
+
+  const value = "9223372036854775807";
+  await client.execute(
+    "INSERT INTO test_bigint(bigint_column) VALUES (?)",
+    [value],
+  );
+
+  const result = await client.query("SELECT bigint_column FROM test_bigint");
+  assertEquals(result, [{ bigint_column: BigInt(value) }]);
+});
+
+testWithClient(async function testQueryDecimal(client) {
+  await client.query(`DROP TABLE IF EXISTS test_decimal`);
+  await client.query(`CREATE TABLE test_decimal (
+    id int(11) NOT NULL AUTO_INCREMENT,
+    decimal_column decimal(65,30) NOT NULL,
+    PRIMARY KEY (id)
+  ) ENGINE=MEMORY DEFAULT CHARSET=utf8mb4`);
+
+  const value = "0.012345678901234567890123456789";
+  await client.execute(
+    "INSERT INTO test_decimal(decimal_column) VALUES (?)",
+    [value],
+  );
+
+  const result = await client.query("SELECT decimal_column FROM test_decimal");
+  assertEquals(result, [{ decimal_column: value }]);
+});
+
 testWithClient(async function testDelete(client) {
   let result = await client.execute(`delete from users where ?? = ?`, [
     "id",
