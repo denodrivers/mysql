@@ -3,6 +3,29 @@ import { ResponseTimeoutError, WriteError } from "./constant/errors.ts";
 import { DeferredStack } from "./deferred.ts";
 import { log } from "./logger.ts";
 
+type Keys = string | number | boolean;
+
+/**
+ * Template literal
+ */
+interface SQLQuery {
+    sql: string;
+    params: Keys[];
+}
+export function SQL(strings:TemplateStringsArray, ...keys:Keys[]): SQLQuery {
+    let result:string = strings[0];
+    let i = 1;  
+    for(let key of keys){
+        if(result.slice(-1)=='$'){
+            result = result.substring(0, result.length - 1)+' ?? ';
+        }else{
+            result += ' ? ';
+        }
+        result += strings[i++];
+    }
+    return {sql: result, params: keys};
+}
+
 /**
  * Clinet Config
  */
@@ -85,7 +108,11 @@ export class Client {
    * @param sql query sql string
    * @param params query params
    */
-  async query(sql: string, params?: any[]): Promise<any> {
+  async query(sql: string|SQLQuery, params?: any[]): Promise<any> {
+    if((<any>sql).sql){//check if SQLQuery
+        let query = <SQLQuery>sql;
+        [ sql, params ] = [ query.sql, query.params ];
+    }
     return await this.useConnection(async (connection) => {
       return await connection.query(sql, params);
     });
@@ -96,7 +123,11 @@ export class Client {
    * @param sql sql string
    * @param params query params
    */
-  async execute(sql: string, params?: any[]): Promise<ExecuteResult> {
+  async execute(sql: string|SQLQuery, params?: any[]): Promise<ExecuteResult> {
+    if((<any>sql).sql){//check if SQLQuery
+        let query = <SQLQuery>sql;
+        [ sql, params ] = [ query.sql, query.params ];
+    }
     return await this.useConnection(async (connection) => {
       return await connection.execute(sql, params);
     });
