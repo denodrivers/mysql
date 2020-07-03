@@ -1,5 +1,7 @@
 import { BufferReader, BufferWriter } from "../../buffer.ts";
 import ServerCapabilities from "../../constant/capabilities.ts";
+import { PacketType } from '../../constant/packet.ts';
+import { ReceivePacket } from '../packet.ts';
 
 /** @ignore */
 export interface HandshakeBody {
@@ -64,4 +66,26 @@ export function parseHandshake(reader: BufferReader): HandshakeBody {
     statusFlags,
     authPluginName,
   };
+}
+
+export function parseAuthResponse(packet: ReceivePacket): Uint8Array {
+    const enum AuthStatusFlags {
+      FullAuth = 0x04,
+    }
+    const PERFORM_FULL_AUTH = 0x02;
+    if(packet.type === PacketType.EOF_Packet) {
+      //TODO: handler auth switch
+      return new Uint8Array();
+    }
+    if(packet.type === PacketType.Result) {
+      const statusFlag = packet.body.skip(1).readUint8();
+      if(statusFlag === AuthStatusFlags.FullAuth) {
+        return new Uint8Array([PERFORM_FULL_AUTH])
+      } 
+    }
+    return new Uint8Array;
+}
+
+export function parsePublicKey(packet: ReceivePacket): string {
+  return packet.body.skip(1).readNullTerminatedString();
 }

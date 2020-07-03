@@ -6,8 +6,10 @@ import { buildAuth } from "./packets/builders/auth.ts";
 import { buildQuery } from "./packets/builders/query.ts";
 import { ReceivePacket, SendPacket } from "./packets/packet.ts";
 import { parseError } from "./packets/parsers/err.ts";
-import { parseHandshake } from "./packets/parsers/handshake.ts";
+import { parseHandshake, parseAuthResponse, parsePublicKey } from "./packets/parsers/handshake.ts";
 import { FieldInfo, parseField, parseRow } from "./packets/parsers/result.ts";
+import { PacketType } from './constant/packet.ts';
+import { encrypt } from './auth_plugin/caching_sha2_password.ts';
 
 /**
  * Connection state
@@ -61,6 +63,21 @@ export class Connection {
     this.capabilities = handshakePacket.serverCapabilities;
 
     receive = await this.nextPacket();
+
+    const authMorePacket = parseAuthResponse(receive);
+    console.log('authMorePact', authMorePacket);
+
+    // TODO: if has public configured, use it
+    // request public from server
+    await new SendPacket(authMorePacket, receive.header.no+1).send(this.conn)
+    receive = await this.nextPacket();
+    const publicKey = parsePublicKey(receive);
+    const scramble = handshakePacket.seed;
+    const password = this.client.config.password;
+    const encryptedPassword = encrypt(password, scramble, publicKey)
+
+    await new SendPacket(encryptedPassword, receive.header.no+1).send(this.conn);
+
     const header = receive.body.readUint8();
     if (header === 0xff) {
       const error = parseError(receive.body, this);
@@ -88,8 +105,10 @@ export class Connection {
 
     while (this.conn!) {
       const packet = await new ReceivePacket().parse(this.conn!);
+      console.log('packet: ', packet);
+
       if (packet) {
-        if (packet.type === "ERR") {
+        if (packet.type === PacketType.ERR_Packet) {
           packet.body.skip(1);
           const error = parseError(packet.body, this);
           throw new Error(error.message);
@@ -158,9 +177,14 @@ export class Connection {
       throw new Error("Must be connected first");
     }
     const data = buildQuery(sql, params);
+    console.log('query', sql);
+    
     await new SendPacket(data, 0).send(this.conn);
+    console.log('send packet');
+    
+    console.log('receiving packet, begin parse ---->');
     let receive = await this.nextPacket();
-    if (receive.type === "OK") {
+    if (receive.type === PacketType.OK_Packet) {
       receive.body.skip(1);
       return {
         affectedRows: receive.body.readEncodedLen(),
@@ -185,7 +209,7 @@ export class Connection {
 
     while (true) {
       receive = await this.nextPacket();
-      if (receive.type === "EOF") {
+      if (receive.type === PacketType.EOF_Packet) {
         break;
       } else {
         const row = parseRow(receive.body, fields);

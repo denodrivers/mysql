@@ -37,7 +37,7 @@ export default function auth(
 
     case "caching_sha2_password":
     // TODO
-    // return cachingSha2Password(password, seed);
+    return cachingSha2Password(password, seed);
     default:
       throw new Error("Not supported");
   }
