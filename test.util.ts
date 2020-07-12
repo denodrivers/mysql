@@ -1,4 +1,4 @@
-import { Client } from "./mod.ts";
+import { Client, Connection } from "./mod.ts";
 
 const { DB_PORT, DB_NAME, DB_PASSWORD, DB_USER, DB_HOST } = Deno.env.toObject();
 const port = DB_PORT ? parseInt(DB_PORT) : 3306;
@@ -43,4 +43,8 @@ export async function createTestDB() {
   });
   await client.execute(`CREATE DATABASE IF NOT EXISTS ${db}`);
   await client.close();
+}
+
+export function isMariaDB(connection: Connection): boolean {
+  return connection.serverVersion.includes("MariaDB");
 }
