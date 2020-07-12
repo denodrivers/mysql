@@ -119,6 +119,25 @@ testWithClient(async function testQueryDecimal(client) {
   assertEquals(result, [{ decimal_column: value }]);
 });
 
+testWithClient(async function testQueryDatetime(client) {
+  await client.query(`DROP TABLE IF EXISTS test_datetime`);
+  await client.query(`CREATE TABLE test_datetime (
+    id int(11) NOT NULL AUTO_INCREMENT,
+    datetime datetime(6) NOT NULL,
+    PRIMARY KEY (id)
+  ) ENGINE=MEMORY DEFAULT CHARSET=utf8mb4`);
+  const datetime = new Date();
+  await client.execute(
+    `
+    INSERT INTO test_datetime (datetime)
+    VALUES (?)`,
+    [datetime],
+  );
+
+  const [row] = await client.query("SELECT datetime FROM test_datetime");
+  assertEquals(row.datetime.toISOString(), datetime.toISOString()); // See https://github.com/denoland/deno/issues/6643
+});
+
 testWithClient(async function testDelete(client) {
   let result = await client.execute(`delete from users where ?? = ?`, [
     "id",
