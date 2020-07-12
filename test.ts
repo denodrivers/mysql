@@ -1,7 +1,8 @@
 import {
   assertEquals,
   assertThrowsAsync,
-} from "./deps.ts";
+  semver,
+} from "./test.deps.ts";
 import { WriteError } from "./src/constant/errors.ts";
 import { createTestDB, testWithClient } from "./test.util.ts";
 
@@ -120,22 +121,28 @@ testWithClient(async function testQueryDecimal(client) {
 });
 
 testWithClient(async function testQueryDatetime(client) {
-  await client.query(`DROP TABLE IF EXISTS test_datetime`);
-  await client.query(`CREATE TABLE test_datetime (
-    id int(11) NOT NULL AUTO_INCREMENT,
-    datetime datetime(6) NOT NULL,
-    PRIMARY KEY (id)
-  ) ENGINE=MEMORY DEFAULT CHARSET=utf8mb4`);
-  const datetime = new Date();
-  await client.execute(
-    `
-    INSERT INTO test_datetime (datetime)
-    VALUES (?)`,
-    [datetime],
-  );
+  await client.useConnection(async (connection) => {
+    if (semver.lt(connection.serverVersion, "5.6.0")) {
+      return;
+    }
 
-  const [row] = await client.query("SELECT datetime FROM test_datetime");
-  assertEquals(row.datetime.toISOString(), datetime.toISOString()); // See https://github.com/denoland/deno/issues/6643
+    await client.query(`DROP TABLE IF EXISTS test_datetime`);
+    await client.query(`CREATE TABLE test_datetime (
+      id int(11) NOT NULL AUTO_INCREMENT,
+      datetime datetime(6) NOT NULL,
+      PRIMARY KEY (id)
+    ) ENGINE=MEMORY DEFAULT CHARSET=utf8mb4`);
+    const datetime = new Date();
+    await client.execute(
+      `
+      INSERT INTO test_datetime (datetime)
+      VALUES (?)`,
+      [datetime],
+    );
+
+    const [row] = await client.query("SELECT datetime FROM test_datetime");
+    assertEquals(row.datetime.toISOString(), datetime.toISOString()); // See https://github.com/denoland/deno/issues/6643
+  });
 });
 
 testWithClient(async function testDelete(client) {
