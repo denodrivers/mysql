@@ -4,7 +4,7 @@ import {
   semver,
 } from "./test.deps.ts";
 import { WriteError } from "./src/constant/errors.ts";
-import { createTestDB, testWithClient } from "./test.util.ts";
+import { createTestDB, testWithClient, isMariaDB } from "./test.util.ts";
 
 testWithClient(async function testCreateDb(client) {
   await client.query(`CREATE DATABASE IF NOT EXISTS enok`);
@@ -122,7 +122,7 @@ testWithClient(async function testQueryDecimal(client) {
 
 testWithClient(async function testQueryDatetime(client) {
   await client.useConnection(async (connection) => {
-    if (semver.lt(connection.serverVersion, "5.6.0")) {
+    if (isMariaDB(connection) || semver.lt(connection.serverVersion, "5.6.0")) {
       return;
     }
 
