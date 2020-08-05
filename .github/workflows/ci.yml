@@ -24,7 +24,7 @@ jobs:
       - name: Install Deno
         uses: denolib/setup-deno@master
         with:
-          deno-version: 1.0.2
+          deno-version: 1.2.2
       - name: check fmt
         run: deno fmt --check
       - name: test ts
