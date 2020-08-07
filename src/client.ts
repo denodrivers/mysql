@@ -77,8 +77,11 @@ export class Client {
       this._connections,
       this.createConnection.bind(this),
     );
-    const result = await this.execute('show databases;');
-    console.log('connect result', result);
+    const result = await this.useConnection((args)=>{
+      console.log('actually i dont want to do anything', args)
+      return Promise.resolve();
+    });
+    console.log('result: ', result);
     return this;
   }
 

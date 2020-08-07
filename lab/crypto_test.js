@@ -1,0 +1,19 @@
+const crypto = require('crypto');
+const fs = require('fs');
+const privateKey = fs.readFileSync('./private.pem');
+
+
+const keyObject = crypto.createPrivateKey(privateKey);
+// keyObject.padding = crypto.constants.RSA_PKCS1_PADDING;
+
+// const result = fs.readFileSync('./cipher');
+// const cipher = '721eda682f4877aa6bb1ee4d5c4081af602ce3336faccda29618712f7ff94ce09c8acba2d91841987428523d3b70cc256c1d376ceb51f94805c1ec16162bfabd4a1e9f51a226abe2589b3e6b391e6616bbd67683f88943855a851486f6d844b739c6a96d5e3707a5f1ac2941fa264973e9b364938abadee263af861e18b4f778471ef91a135ce88b389e149d828f324293cab669356d3d1bfebc7d08e24f1ea6f0d143cbd6de57b228898758b58b99017e9cedb1b2462ad603bc8a48a25dc24cd2b71dfc654aab496ea234180141096988ca71c77bafcda6da0278e740fec33533060588aa35c406225f44f40477d345fe7797d232e5f5225917a'
+
+const cipher = '77df3fc26a8f76b8e114e5dec006863a6e8c2942384f0f0cf2c392256b15e7f7818d956d63b739271795b27b2de85a52d578716ef7e20be7b64b99eccf9d868d0ba1450f3e6122af7efb57c113839b649b320c2a4e43748fc9da57ed6c8c2932bf92e56d9d9cfaf6d1a42061cdfd94c99494639888d50bc76797375818cf0fe08f09e1b26fbc61912ccddb3944d31d68dece4ace91265d2bd9816a08f8e44a289e3823c62b549cd016a18640ce85145cb1afa82e8f0bce7ecccc5c6ecefd2d673a2c827bd37965c0d5851496492c34d2882888cab2b6c5548be36c619b6abe231dfb532b7171d044a9e78fc314941209a110e37402c0d9aba50bdba5e9fbb29b'
+
+const result = Buffer.from(cipher, 'hex');
+console.log('cipher: ', result);
+
+const plain = crypto.privateDecrypt(keyObject, result)
+console.log('plain ->', plain.toString('ascii'));
+

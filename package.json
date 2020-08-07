@@ -18,6 +18,7 @@
   },
   "homepage": "https://github.com/manyuanrong/deno_mysql#readme",
   "devDependencies": {
+    "babel-loader": "^8.1.0",
     "typedoc": "^0.14.2"
   }
 }

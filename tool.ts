@@ -1,5 +1,5 @@
 function whatsUrCapability(flag: number) {
-  const capabilities: [string, number][] =[
+  const capabilities: [string, number][] = [
     ["CLIENT_LONG_PASSWORD	", 0x00000001],
     ["CLIENT_FOUND_ROWS	", 0x00000002],
     ["CLIENT_LONG_FLAG	", 0x00000004],
@@ -27,13 +27,9 @@ function whatsUrCapability(flag: number) {
     ["CLIENT_DEPECATE_EOF", 0x01000000],
   ];
 
-  return capabilities.filter(item => item[1] & flag).map(item => item);
+  return capabilities.filter(item => item[1] & flag).map(item => [...item, item[1].toString(2)]);
 }
 
-//big endian
-// console.log('test',whatsUrCapability(0x8da60f00))
-//little endian
-// console.log('test',whatsUrCapability(0x000fa68d))
-
-console.log('test',whatsUrCapability(0x00aaf3cf));
-console.log('test',whatsUrCapability(0x00aaf3cf));
+// console.log('big endian',whatsUrCapability(0xcff3aa00))
+console.log('big endian',whatsUrCapability(0x012aa20d))
+// console.log('little endian',whatsUrCapability(0x00aaf3cf))
