@@ -68,26 +68,14 @@ export function parseHandshake(reader: BufferReader): HandshakeBody {
   };
 }
 
-export function parseAuthResponse(packet: ReceivePacket): Uint8Array {
-    const enum AuthStatusFlags {
-      FullAuth = 0x04,
-      FastPath = 0x03,
-    }
-    const PERFORM_FULL_AUTH = 0x02;
+export function isMatch(packet: ReceivePacket): boolean {
     if(packet.type === PacketType.EOF_Packet) {
-      //TODO: handler auth switch
-      return new Uint8Array();
+      return false;
     }
     if(packet.type === PacketType.Result) {
-      const statusFlag = packet.body.skip(1).readUint8();
-      if(statusFlag === AuthStatusFlags.FullAuth) {
-        return new Uint8Array([PERFORM_FULL_AUTH])
-      } 
-      if(statusFlag === AuthStatusFlags.FastPath) {
-        return new Uint8Array()
-      } 
+      return true;
     }
-    return new Uint8Array;
+    return false;
 }
 
 export function parsePublicKey(packet: ReceivePacket): string {

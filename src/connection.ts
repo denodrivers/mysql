@@ -6,7 +6,7 @@ import { buildAuth } from "./packets/builders/auth.ts";
 import { buildQuery } from "./packets/builders/query.ts";
 import { ReceivePacket, SendPacket } from "./packets/packet.ts";
 import { parseError } from "./packets/parsers/err.ts";
-import { parseHandshake, parseAuthResponse, parsePublicKey } from "./packets/parsers/handshake.ts";
+import { parseHandshake, isMatch, parsePublicKey } from "./packets/parsers/handshake.ts";
 import { FieldInfo, parseField, parseRow } from "./packets/parsers/result.ts";
 import { PacketType } from './constant/packet.ts';
 import authPlugin from './auth_plugin/index.ts';
@@ -42,7 +42,7 @@ export class Connection {
   constructor (readonly client: Client) { }
 
   private async _connect() {
-    const { hostname, port = 3306 } = this.client.config;
+    const { hostname, port = 3306, username, password} = this.client.config;
     log.info(`connecting ${hostname}:${port}`);
     this.conn = await Deno.connect({
       hostname,
@@ -53,9 +53,10 @@ export class Connection {
     let receive = await this.nextPacket();
     const handshakePacket = parseHandshake(receive.body);
     // console.log('handshakePacket: ', handshakePacket);
+    // handshakePacket.authPluginName = 'mysql_native_password'
     const data = buildAuth(handshakePacket, {
-      username: this.client.config.username ?? "",
-      password: this.client.config.password,
+      username: username ?? "",
+      password,
       db: this.client.config.db,
     });
     await new SendPacket(data, 0x1).send(this.conn);
@@ -65,29 +66,29 @@ export class Connection {
 
     receive = await this.nextPacket();
 
-    // may auth more
-    const authMorePacket = parseAuthResponse(receive);
-    console.log('authMorePact', authMorePacket);
-    if (authMorePacket.length > 1) {
-      // TODO: if has public configured, use it
-      // request public from server
-      await new SendPacket(authMorePacket, receive.header.no + 1).send(this.conn)
-      receive = await this.nextPacket();
-      const publicKey = parsePublicKey(receive);
-      const scramble = handshakePacket.seed;
-      const password: string = this.client.config.password!;
-      const len = password.length;
-      let passwordBuffer: Uint8Array = new Uint8Array(len + 1);
-      for (let n = 0; n < len; n++) {
-        passwordBuffer[n] = password.charCodeAt(n);
+    const authMethodMatch = isMatch(receive);
+    let handler;
+    if (authMethodMatch) {
+      // const adaptedPlugin = authPlugin[handshakePacket.authPluginName];
+      if (handshakePacket.authPluginName === 'caching_sha2_password') {
+        handler = authPlugin.caching_sha2_password;
       }
-      passwordBuffer[len] = 0x00;
-
-      const {encrypt} = authPlugin.caching_sha2_password;
-      const encryptedPassword = encrypt(passwordBuffer, scramble, publicKey)
-
-      await new SendPacket(encryptedPassword, receive.header.no + 1).send(this.conn);
-      // auth end
+    } else {
+      //TODO: negotiation
+    }
+    let result;
+    if (handler) {
+      result = handler.start(handshakePacket.seed, password!);
+      do {
+        if (result.data) {
+          const sequenceNumber = receive.header.no + 1;
+          await new SendPacket(result.data, sequenceNumber).send(this.conn)
+          receive = await this.nextPacket();
+        }
+        if (result.next) {
+          result = result.next(receive);
+        }
+      } while (!result.done)
     }
 
     const header = receive.body.readUint8();
