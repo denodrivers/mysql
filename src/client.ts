@@ -77,9 +77,6 @@ export class Client {
       this._connections,
       this.createConnection.bind(this),
     );
-    await this.useConnection((args)=>{
-      return Promise.resolve();
-    });
     return this;
   }
 
