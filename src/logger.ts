@@ -6,13 +6,13 @@ let isDebug = false;
 
 /** @ignore */
 export function debug(func: Function) {
-  // if (isDebug) {
+  if (isDebug) {
     func();
-  // }
+  }
 }
 
 /** @ignore */
-export async function config___(config: { debug: boolean; logFile: string }) {
+export async function config(config: { debug: boolean; logFile: string }) {
   isDebug = config.debug;
   await log.setup({
     handlers: {

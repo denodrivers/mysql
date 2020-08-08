@@ -30,10 +30,6 @@ export function buildAuth(
   if (packet.serverCapabilities & ServerCapabilities.CLIENT_DEPRECATE_EOF) {
     clientParam |= ServerCapabilities.CLIENT_DEPRECATE_EOF;
   }
-    // clientParam |= ServerCapabilities.CLIENT_IGNORE_SPACE;
-    // clientParam |= ServerCapabilities.CLIENT_IGNORE_SIGPIPE;
-    // clientParam |= ServerCapabilities.CLIENT_PS_MULTI_RESULTS;
-    // clientParam |= ServerCapabilities.CLIENT_RESERVED;
   if (packet.serverCapabilities & ServerCapabilities.CLIENT_PLUGIN_AUTH) {
     const writer = new BufferWriter(new Uint8Array(1000));
     writer
