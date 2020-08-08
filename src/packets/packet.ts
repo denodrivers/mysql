@@ -2,7 +2,7 @@ import { byteFormat } from "../../deps.ts";
 import { BufferReader, BufferWriter } from "../buffer.ts";
 import { WriteError } from "../constant/errors.ts";
 import { debug, log } from "../logger.ts";
-import { PacketType } from '../../src/constant/packet.ts';
+import { PacketType } from "../../src/constant/packet.ts";
 
 /** @ignore */
 interface PacketHeader {
@@ -14,7 +14,7 @@ interface PacketHeader {
 export class SendPacket {
   header: PacketHeader;
 
-  constructor (readonly body: Uint8Array, no: number) {
+  constructor(readonly body: Uint8Array, no: number) {
     this.header = { size: body.length, no };
   }
 
@@ -55,7 +55,7 @@ export class ReceivePacket {
     if (nread === null) return null;
     readCount += nread;
 
-    const { OK_Packet, ERR_Packet, EOF_Packet, Result } = PacketType
+    const { OK_Packet, ERR_Packet, EOF_Packet, Result } = PacketType;
     switch (this.body.buffer[0]) {
       case OK_Packet:
         this.type = OK_Packet;
@@ -77,7 +77,7 @@ export class ReceivePacket {
       data.set(this.body.buffer, 4);
       log.debug(
         `receive: ${readCount}B, size = ${this.header.size}, no = ${this.header.no} \n${
-        byteFormat(data)
+          byteFormat(data)
         }\n`,
       );
     });

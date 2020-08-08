@@ -6,10 +6,14 @@ import { buildAuth } from "./packets/builders/auth.ts";
 import { buildQuery } from "./packets/builders/query.ts";
 import { ReceivePacket, SendPacket } from "./packets/packet.ts";
 import { parseError } from "./packets/parsers/err.ts";
-import { parseHandshake, parseAuth, AuthResult } from "./packets/parsers/handshake.ts";
+import {
+  parseHandshake,
+  parseAuth,
+  AuthResult,
+} from "./packets/parsers/handshake.ts";
 import { FieldInfo, parseField, parseRow } from "./packets/parsers/result.ts";
-import { PacketType } from './constant/packet.ts';
-import authPlugin from './auth_plugin/index.ts';
+import { PacketType } from "./constant/packet.ts";
+import authPlugin from "./auth_plugin/index.ts";
 
 /**
  * Connection state
@@ -39,7 +43,7 @@ export class Connection {
 
   private conn?: Deno.Conn;
 
-  constructor (readonly client: Client) { }
+  constructor(readonly client: Client) {}
 
   private async _connect() {
     const { hostname, port = 3306, username, password } = this.client.config;
@@ -69,7 +73,8 @@ export class Connection {
 
     switch (authResult) {
       case AuthResult.AuthMoreRequired:
-        const adaptedPlugin = (authPlugin as any)[handshakePacket.authPluginName];
+        const adaptedPlugin =
+          (authPlugin as any)[handshakePacket.authPluginName];
         handler = adaptedPlugin;
         break;
       case AuthResult.MethodMismatch:
@@ -83,13 +88,13 @@ export class Connection {
       do {
         if (result.data) {
           const sequenceNumber = receive.header.no + 1;
-          await new SendPacket(result.data, sequenceNumber).send(this.conn)
+          await new SendPacket(result.data, sequenceNumber).send(this.conn);
           receive = await this.nextPacket();
         }
         if (result.next) {
           result = result.next(receive);
         }
-      } while (!result.done)
+      } while (!result.done);
     }
 
     const header = receive.body.readUint8();

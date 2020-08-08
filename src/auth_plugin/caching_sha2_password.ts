@@ -1,18 +1,18 @@
-import { xor } from '../util.ts';
-import { ReceivePacket } from '../packets/packet.ts';
-import { encryptWithPublicKey } from './crypt.ts';
+import { xor } from "../util.ts";
+import { ReceivePacket } from "../packets/packet.ts";
+import { encryptWithPublicKey } from "./crypt.ts";
 
 interface handler {
-  done: boolean,
-  next?: (packet: ReceivePacket) => any,
-  data?: Uint8Array
+  done: boolean;
+  next?: (packet: ReceivePacket) => any;
+  data?: Uint8Array;
 }
 
 let scramble: Uint8Array, password: string;
 function start(scramble_: Uint8Array, password_: string): handler {
   scramble = scramble_;
   password = password_;
-  return { done: false, next: authMoreResponse }
+  return { done: false, next: authMoreResponse };
 }
 function authMoreResponse(packet: ReceivePacket): handler {
   const enum AuthStatusFlags {
@@ -23,7 +23,7 @@ function authMoreResponse(packet: ReceivePacket): handler {
   const statusFlag = packet.body.skip(1).readUint8();
   let authMoreData, done = true, next;
   if (statusFlag === AuthStatusFlags.FullAuth) {
-    authMoreData = new Uint8Array([REQUEST_PUBLIC_KEY])
+    authMoreData = new Uint8Array([REQUEST_PUBLIC_KEY]);
     done = false;
     next = encryptWithKey;
   }
@@ -42,21 +42,25 @@ function encryptWithKey(packet: ReceivePacket): handler {
   }
   passwordBuffer[len] = 0x00;
 
-  const encryptedPassword = encrypt(passwordBuffer, scramble, publicKey)
-  return { done: false, next: done, data: encryptedPassword }
+  const encryptedPassword = encrypt(passwordBuffer, scramble, publicKey);
+  return { done: false, next: done, data: encryptedPassword };
 }
 
 function parsePublicKey(packet: ReceivePacket): string {
   return packet.body.skip(1).readNullTerminatedString();
 }
-function encrypt(password: Uint8Array, scramble: Uint8Array, key: string): Uint8Array {
-  const stage1 = xor(password, scramble)
+function encrypt(
+  password: Uint8Array,
+  scramble: Uint8Array,
+  key: string,
+): Uint8Array {
+  const stage1 = xor(password, scramble);
   const encrypted = encryptWithPublicKey(key, stage1);
   return encrypted;
 }
 
 function done() {
-  return { done: true }
+  return { done: true };
 }
 
 export { start };

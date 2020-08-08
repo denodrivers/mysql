@@ -1,7 +1,7 @@
 import { BufferReader, BufferWriter } from "../../buffer.ts";
 import ServerCapabilities from "../../constant/capabilities.ts";
-import { PacketType } from '../../constant/packet.ts';
-import { ReceivePacket } from '../packet.ts';
+import { PacketType } from "../../constant/packet.ts";
+import { ReceivePacket } from "../packet.ts";
 
 /** @ignore */
 export interface HandshakeBody {
@@ -74,14 +74,14 @@ export enum AuthResult {
   AuthMoreRequired,
 }
 export function parseAuth(packet: ReceivePacket): AuthResult {
-    switch (packet.type) {
-      case PacketType.EOF_Packet:
-        return AuthResult.MethodMismatch;
-      case PacketType.Result:
-        return AuthResult.AuthMoreRequired;
-      case PacketType.OK_Packet:
-        return AuthResult.AuthPassed;
-      default: 
-        return AuthResult.AuthPassed;
-    }
+  switch (packet.type) {
+    case PacketType.EOF_Packet:
+      return AuthResult.MethodMismatch;
+    case PacketType.Result:
+      return AuthResult.AuthMoreRequired;
+    case PacketType.OK_Packet:
+      return AuthResult.AuthPassed;
+    default:
+      return AuthResult.AuthPassed;
+  }
 }

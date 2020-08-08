@@ -1,5 +1,5 @@
 import { encode, Hash, sha256 } from "../deps.ts";
-import { xor } from './util.ts';
+import { xor } from "./util.ts";
 
 function mysqlNativePassword(password: string, seed: Uint8Array): Uint8Array {
   const hash = new Hash("sha1");
@@ -31,7 +31,6 @@ export default function auth(
       return mysqlNativePassword(password, seed);
 
     case "caching_sha2_password":
-      // TODO
       return cachingSha2Password(password, seed);
     default:
       throw new Error("Not supported");
