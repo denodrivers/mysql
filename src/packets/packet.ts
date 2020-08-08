@@ -50,14 +50,10 @@ export class ReceivePacket {
       no: header.readUint8(),
     };
 
-    console.log('pars received packet, body size: ', this.header.size);
-
     this.body = new BufferReader(new Uint8Array(this.header.size));
     nread = await reader.read(this.body.buffer);
     if (nread === null) return null;
     readCount += nread;
-
-    log.warning(`body: ${byteFormat(this.body.buffer)}`);
 
     const { OK_Packet, ERR_Packet, EOF_Packet, Result } = PacketType
     switch (this.body.buffer[0]) {
@@ -74,24 +70,6 @@ export class ReceivePacket {
         this.type = Result;
         break;
     }
-
-    // if(this.body.buffer[0] === 0x01) {
-    //   log.info('auth more data')
-    //   const len = 16;
-    //   let end = false;
-    //   let count =  20;
-    //   let extraBuffer;
-    //     extraBuffer = new Uint8Array(len);
-    //   while(!(end || count < 1)) {
-    //     const result = await reader.read(extraBuffer)
-    //     console.log('result',result, byteFormat(extraBuffer))
-    //     if(Number(result) - len <0) {
-    //       break;
-    //     }
-    //     count--;
-    //   }
-    //   log.info('auth more data end')
-    // }
 
     debug(() => {
       const data = new Uint8Array(readCount);

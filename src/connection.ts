@@ -190,12 +190,9 @@ export class Connection {
       throw new Error("Must be connected first");
     }
     const data = buildQuery(sql, params);
-    // console.log('query', sql);
 
     await new SendPacket(data, 0).send(this.conn);
-    // console.log('send packet');
 
-    console.log('receiving packet, begin parse ---->');
     let receive = await this.nextPacket();
     if (receive.type === PacketType.OK_Packet) {
       receive.body.skip(1);

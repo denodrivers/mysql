@@ -77,11 +77,9 @@ export class Client {
       this._connections,
       this.createConnection.bind(this),
     );
-    const result = await this.useConnection((args)=>{
-      console.log('actually i dont want to do anything', args)
+    await this.useConnection((args)=>{
       return Promise.resolve();
     });
-    console.log('result: ', result);
     return this;
   }
 

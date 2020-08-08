@@ -3,7 +3,7 @@ import { Client } from './mod.ts';
 console.log('----------first ----------');
 const client = await new Client().connect({
   hostname: "127.0.0.1",
-  debug: true,
+  // debug: true,
   port: 3307,
   username: "root",
   db: "mytest",
