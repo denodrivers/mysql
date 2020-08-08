@@ -6,7 +6,7 @@ import { buildAuth } from "./packets/builders/auth.ts";
 import { buildQuery } from "./packets/builders/query.ts";
 import { ReceivePacket, SendPacket } from "./packets/packet.ts";
 import { parseError } from "./packets/parsers/err.ts";
-import { parseHandshake, isMatch, parsePublicKey } from "./packets/parsers/handshake.ts";
+import { parseHandshake, parseAuth, AuthResult } from "./packets/parsers/handshake.ts";
 import { FieldInfo, parseField, parseRow } from "./packets/parsers/result.ts";
 import { PacketType } from './constant/packet.ts';
 import authPlugin from './auth_plugin/index.ts';
@@ -42,7 +42,7 @@ export class Connection {
   constructor (readonly client: Client) { }
 
   private async _connect() {
-    const { hostname, port = 3306, username, password} = this.client.config;
+    const { hostname, port = 3306, username, password } = this.client.config;
     log.info(`connecting ${hostname}:${port}`);
     this.conn = await Deno.connect({
       hostname,
@@ -52,8 +52,6 @@ export class Connection {
 
     let receive = await this.nextPacket();
     const handshakePacket = parseHandshake(receive.body);
-    // console.log('handshakePacket: ', handshakePacket);
-    // handshakePacket.authPluginName = 'mysql_native_password'
     const data = buildAuth(handshakePacket, {
       username: username ?? "",
       password,
@@ -66,16 +64,19 @@ export class Connection {
 
     receive = await this.nextPacket();
 
-    const authMethodMatch = isMatch(receive);
+    const authResult = parseAuth(receive);
     let handler;
-    if (authMethodMatch) {
-      // const adaptedPlugin = authPlugin[handshakePacket.authPluginName];
-      if (handshakePacket.authPluginName === 'caching_sha2_password') {
-        handler = authPlugin.caching_sha2_password;
-      }
-    } else {
-      //TODO: negotiation
+
+    switch (authResult) {
+      case AuthResult.AuthMoreRequired:
+        const adaptedPlugin = (authPlugin as any)[handshakePacket.authPluginName];
+        handler = adaptedPlugin;
+        break;
+      case AuthResult.MethodMismatch:
+        // TODO: Negotiate
+        throw new Error("Currently cannot support auth method mismatch!");
     }
+
     let result;
     if (handler) {
       result = handler.start(handshakePacket.seed, password!);
@@ -118,7 +119,6 @@ export class Connection {
 
     while (this.conn!) {
       const packet = await new ReceivePacket().parse(this.conn!);
-      // console.log('packet: ', packet);
 
       if (packet) {
         if (packet.type === PacketType.ERR_Packet) {

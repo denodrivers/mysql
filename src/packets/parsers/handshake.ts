@@ -68,16 +68,20 @@ export function parseHandshake(reader: BufferReader): HandshakeBody {
   };
 }
 
-export function isMatch(packet: ReceivePacket): boolean {
-    if(packet.type === PacketType.EOF_Packet) {
-      return false;
-    }
-    if(packet.type === PacketType.Result) {
-      return true;
-    }
-    return false;
+export enum AuthResult {
+  AuthPassed,
+  MethodMismatch,
+  AuthMoreRequired,
 }
-
-export function parsePublicKey(packet: ReceivePacket): string {
-  return packet.body.skip(1).readNullTerminatedString();
+export function parseAuth(packet: ReceivePacket): AuthResult {
+    switch (packet.type) {
+      case PacketType.EOF_Packet:
+        return AuthResult.MethodMismatch;
+      case PacketType.Result:
+        return AuthResult.AuthMoreRequired;
+      case PacketType.OK_Packet:
+        return AuthResult.AuthPassed;
+      default: 
+        return AuthResult.AuthPassed;
+    }
 }
