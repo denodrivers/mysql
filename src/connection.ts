@@ -93,13 +93,13 @@ export class Connection {
           await new SendPacket(result.data, sequenceNumber).send(this.conn);
           receive = await this.nextPacket();
         }
-        if(result.quickRead) {
+        if (result.quickRead) {
           await this.nextPacket();
         }
         if (result.next) {
           result = result.next(receive);
         }
-      };
+      }
     }
 
     const header = receive.body.readUint8();
