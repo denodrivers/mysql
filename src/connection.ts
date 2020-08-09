@@ -61,7 +61,9 @@ export class Connection {
       password,
       db: this.client.config.db,
     });
+
     await new SendPacket(data, 0x1).send(this.conn);
+
     this.state = ConnectionState.CONNECTING;
     this.serverVersion = handshakePacket.serverVersion;
     this.capabilities = handshakePacket.serverCapabilities;
@@ -85,16 +87,19 @@ export class Connection {
     let result;
     if (handler) {
       result = handler.start(handshakePacket.seed, password!);
-      do {
+      while (!result.done) {
         if (result.data) {
           const sequenceNumber = receive.header.no + 1;
           await new SendPacket(result.data, sequenceNumber).send(this.conn);
           receive = await this.nextPacket();
         }
+        if(result.quickRead) {
+          await this.nextPacket();
+        }
         if (result.next) {
           result = result.next(receive);
         }
-      } while (!result.done);
+      };
     }
 
     const header = receive.body.readUint8();

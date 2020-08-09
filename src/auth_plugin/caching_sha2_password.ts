@@ -4,6 +4,7 @@ import { encryptWithPublicKey } from "./crypt.ts";
 
 interface handler {
   done: boolean;
+  quickRead?: boolean;
   next?: (packet: ReceivePacket) => any;
   data?: Uint8Array;
 }
@@ -21,16 +22,18 @@ function authMoreResponse(packet: ReceivePacket): handler {
   }
   const REQUEST_PUBLIC_KEY = 0x02;
   const statusFlag = packet.body.skip(1).readUint8();
-  let authMoreData, done = true, next;
+  let authMoreData, done = true, next, quickRead = false;
   if (statusFlag === AuthStatusFlags.FullAuth) {
     authMoreData = new Uint8Array([REQUEST_PUBLIC_KEY]);
     done = false;
     next = encryptWithKey;
   }
   if (statusFlag === AuthStatusFlags.FastPath) {
-    //noop
+    done = false;
+    quickRead = true;
+    next = terminate;
   }
-  return { done, next, data: authMoreData };
+  return { done, next, quickRead, data: authMoreData };
 }
 
 function encryptWithKey(packet: ReceivePacket): handler {
@@ -43,7 +46,7 @@ function encryptWithKey(packet: ReceivePacket): handler {
   passwordBuffer[len] = 0x00;
 
   const encryptedPassword = encrypt(passwordBuffer, scramble, publicKey);
-  return { done: false, next: done, data: encryptedPassword };
+  return { done: false, next: terminate, data: encryptedPassword };
 }
 
 function parsePublicKey(packet: ReceivePacket): string {
@@ -59,7 +62,7 @@ function encrypt(
   return encrypted;
 }
 
-function done() {
+function terminate() {
   return { done: true };
 }
 
