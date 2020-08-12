@@ -46,7 +46,7 @@ export class Connection {
   constructor(readonly client: Client) {}
 
   private async _connect() {
-    const { hostname, port = 3306, username, password } = this.client.config;
+    const { hostname, port = 3306, username = "", password } = this.client.config;
     log.info(`connecting ${hostname}:${port}`);
     this.conn = await Deno.connect({
       hostname,
@@ -57,7 +57,7 @@ export class Connection {
     let receive = await this.nextPacket();
     const handshakePacket = parseHandshake(receive.body);
     const data = buildAuth(handshakePacket, {
-      username: username ?? "",
+      username,
       password,
       db: this.client.config.db,
     });
