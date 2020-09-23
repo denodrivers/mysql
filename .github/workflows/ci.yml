@@ -29,6 +29,6 @@ jobs:
         run: deno fmt --check
       - name: test ts
         run: |
-          docker run -d -p 3306:3306 -e MYSQL_ALLOW_EMPTY_PASSWORD=true ${{ matrix.DB_VERSION }}
+          docker container run --rm -d -p 3306:3306 -e MYSQL_ALLOW_EMPTY_PASSWORD=true ${{ matrix.DB_VERSION }}
           ./.github/workflows/wait-for-mysql.sh
-          deno test --allow-all ./test.ts
+          deno test --allow-env --allow-net=127.0.0.1:3306 ./test.ts
