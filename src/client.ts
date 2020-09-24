@@ -41,7 +41,7 @@ export class Client {
   private _connections: Connection[] = [];
 
   private async createConnection(): Promise<Connection> {
-    let connection: Connection = new Connection(this);
+    let connection: Connection = new Connection(this.config);
     await connection.connect();
     return connection;
   }

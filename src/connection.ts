@@ -1,5 +1,5 @@
 import { delay } from "../deps.ts";
-import { Client } from "./client.ts";
+import { ClientConfig } from "./client.ts";
 import { ResponseTimeoutError } from "./constant/errors.ts";
 import { log } from "./logger.ts";
 import { buildAuth } from "./packets/builders/auth.ts";
@@ -37,10 +37,10 @@ export class Connection {
 
   private conn?: Deno.Conn;
 
-  constructor(readonly client: Client) {}
+  constructor(readonly config: ClientConfig) {}
 
   private async _connect() {
-    const { hostname, port = 3306 } = this.client.config;
+    const { hostname, port = 3306 } = this.config;
     log.info(`connecting ${hostname}:${port}`);
     this.conn = await Deno.connect({
       hostname,
@@ -51,9 +51,9 @@ export class Connection {
     let receive = await this.nextPacket();
     const handshakePacket = parseHandshake(receive.body);
     const data = buildAuth(handshakePacket, {
-      username: this.client.config.username ?? "",
-      password: this.client.config.password,
-      db: this.client.config.db,
+      username: this.config.username ?? "",
+      password: this.config.password,
+      db: this.config.db,
     });
     await new SendPacket(data, 0x1).send(this.conn);
     this.state = ConnectionState.CONNECTING;
@@ -68,12 +68,12 @@ export class Connection {
       this.close();
       throw new Error(error.message);
     } else {
-      log.info(`connected to ${this.client.config.hostname}`);
+      log.info(`connected to ${this.config.hostname}`);
       this.state = ConnectionState.CONNECTED;
     }
 
-    if (this.client.config.charset) {
-      await this.execute(`SET NAMES ${this.client.config.charset}`);
+    if (this.config.charset) {
+      await this.execute(`SET NAMES ${this.config.charset}`);
     }
   }
 
@@ -84,7 +84,7 @@ export class Connection {
 
   private async nextPacket(): Promise<ReceivePacket> {
     let eofCount = 0;
-    const timeout = this.client.config.timeout || 1000;
+    const timeout = this.config.timeout || 1000;
 
     while (this.conn!) {
       const packet = await new ReceivePacket().parse(this.conn!);
