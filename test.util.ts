@@ -26,10 +26,8 @@ export function testWithClient(fn: (client: Client) => void | Promise<void>) {
       const client = await new Client().connect(config);
       try {
         await fn(client);
+      } finally {
         await client.close();
-      } catch (error) {
-        await client.close();
-        throw error;
       }
     },
   });

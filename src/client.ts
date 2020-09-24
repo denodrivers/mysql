@@ -4,7 +4,7 @@ import { DeferredStack } from "./deferred.ts";
 import { log } from "./logger.ts";
 
 /**
- * Clinet Config
+ * Client Config
  */
 export interface ClientConfig {
   /** Database hostname */
@@ -41,7 +41,7 @@ export class Client {
   private _connections: Connection[] = [];
 
   private async createConnection(): Promise<Connection> {
-    let connection: Connection = new Connection(this);
+    let connection: Connection = new Connection(this.config);
     await connection.connect();
     return connection;
   }
