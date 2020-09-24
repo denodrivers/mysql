@@ -4,7 +4,7 @@ import { DeferredStack } from "./deferred.ts";
 import { log } from "./logger.ts";
 
 /**
- * Clinet Config
+ * Client Config
  */
 export interface ClientConfig {
   /** Database hostname */

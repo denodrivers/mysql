@@ -15,7 +15,7 @@ import { FieldInfo, parseField, parseRow } from "./packets/parsers/result.ts";
 export enum ConnectionState {
   CONNECTING,
   CONNECTED,
-  COLSING,
+  CLOSING,
   CLOSED,
 }
 
@@ -129,7 +129,7 @@ export class Connection {
   /** Close database connection */
   close(): void {
     log.info("close connection");
-    this.state = ConnectionState.COLSING;
+    this.state = ConnectionState.CLOSING;
     this.conn && this.conn.close();
     this.state = ConnectionState.CLOSED;
   }
