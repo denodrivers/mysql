@@ -135,3 +135,15 @@ console.log(users.length);
 ```ts
 await client.close();
 ```
+
+## Test
+
+The tests require a database to run against.
+
+```bash
+docker container run --rm -d -p 3306:3306 -e MYSQL_ALLOW_EMPTY_PASSWORD=true docker.io/mariadb:latest
+deno test --allow-env --allow-net=127.0.0.1:3306 ./test.ts
+```
+
+Use different docker images to test against different versions of MySQL and MariaDB.
+Please see [ci.yml](./.github/workflows/ci.yml) for examples.
