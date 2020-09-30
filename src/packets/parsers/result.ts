@@ -71,12 +71,12 @@ export function parseField(reader: BufferReader): FieldInfo {
 }
 
 /** @ignore */
-export function parseRow(reader: BufferReader, fileds: FieldInfo[]): any {
+export function parseRow(reader: BufferReader, fields: FieldInfo[]): any {
   const row: any = {};
-  for (let i = 0; i < fileds.length; i++) {
-    const name = fileds[i].name;
+  for (const field of fields) {
+    const name = field.name;
     const val = reader.readLenCodeString();
-    row[name] = val === null ? null : convertType(fileds[i], val);
+    row[name] = val === null ? null : convertType(field, val);
   }
   return row;
 }
