@@ -1,5 +1,5 @@
-import { BufferReader } from "../../buffer.ts";
-import { Connection } from "../../connection.ts";
+import type { BufferReader } from "../../buffer.ts";
+import type { Connection } from "../../connection.ts";
 import ServerCapabilities from "../../constant/capabilities.ts";
 
 /** @ignore */

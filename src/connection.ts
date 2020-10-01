@@ -1,5 +1,5 @@
 import { delay } from "../deps.ts";
-import { ClientConfig } from "./client.ts";
+import type { ClientConfig } from "./client.ts";
 import { ResponseTimeoutError } from "./constant/errors.ts";
 import { log } from "./logger.ts";
 import { buildAuth } from "./packets/builders/auth.ts";

@@ -1,4 +1,4 @@
-import { BufferReader } from "../../buffer.ts";
+import type { BufferReader } from "../../buffer.ts";
 import {
   MYSQL_TYPE_DATE,
   MYSQL_TYPE_DATETIME,
