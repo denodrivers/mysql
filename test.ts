@@ -4,7 +4,7 @@ import {
   semver,
 } from "./test.deps.ts";
 import { WriteError } from "./src/constant/errors.ts";
-import { createTestDB, testWithClient, isMariaDB } from "./test.util.ts";
+import { createTestDB, testWithClient, isMariaDB, delay } from "./test.util.ts";
 
 testWithClient(async function testCreateDb(client) {
   await client.query(`CREATE DATABASE IF NOT EXISTS enok`);
@@ -211,6 +211,41 @@ testWithClient(async function testTransactionRollback(client) {
   assertEquals(undefined, success);
   const result = await client.query("select name from users");
   assertEquals([{ name: "transaction1" }], result);
+});
+
+testWithClient(async function testIdleTimeout(client) {
+  assertEquals(client.pool, {
+    maxSize: 3,
+    available: 0,
+    size: 0,
+  });
+  await Promise.all(new Array(10).fill(0).map(() => client.query("select 1")));
+  assertEquals(client.pool, {
+    maxSize: 3,
+    available: 3,
+    size: 3,
+  });
+  await delay(500);
+  assertEquals(client.pool, {
+    maxSize: 3,
+    available: 3,
+    size: 3,
+  });
+  await client.query("select 1");
+  await delay(500);
+  assertEquals(client.pool, {
+    maxSize: 3,
+    available: 1,
+    size: 1,
+  });
+  await delay(500);
+  assertEquals(client.pool, {
+    maxSize: 3,
+    available: 0,
+    size: 0,
+  });
+}, {
+  idleTimeout: 750,
 });
 
 await createTestDB();
