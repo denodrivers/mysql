@@ -1,6 +1,6 @@
 import { DeferredStack } from "./deferred.ts";
 import { Connection } from "./connection.ts";
-import { debug, log } from "./logger.ts";
+import { log } from "./logger.ts";
 
 /** @ignore */
 export class PoolConnection extends Connection {
@@ -10,24 +10,26 @@ export class PoolConnection extends Connection {
   private _idle = false;
 
   /**
-     * Should be called by the pool.
-     */
+   * Should be called by the pool.
+   */
   enterIdle() {
     this._idle = true;
     if (this.config.idleTimeout) {
       this._idleTimer = setTimeout(() => {
-        debug(() => {
-          log.info("connection idle timeout");
-        });
-        this.removeFromPool();
-        this.close();
+        log.info("connection idle timeout");
+        this._pool!.remove(this);
+        try {
+          this.close();
+        } catch (error) {
+          log.warning(`error closing idle connection`, error);
+        }
       }, this.config.idleTimeout);
     }
   }
 
   /**
-     * Should be called by the pool.
-     */
+   * Should be called by the pool.
+   */
   exitIdle() {
     this._idle = false;
     if (this._idleTimer !== undefined) {
@@ -36,14 +38,10 @@ export class PoolConnection extends Connection {
   }
 
   /**
-     * Remove the connection from the pool permanently, when the connection is not usable.
-     */
+   * Remove the connection from the pool permanently, when the connection is not usable.
+   */
   removeFromPool() {
-    if (this._idle) {
-      this._pool!.remove(this);
-    } else {
-      this._pool!.reduceSize();
-    }
+    this._pool!.reduceSize();
     this._pool = undefined;
   }
 
@@ -97,16 +95,17 @@ export class ConnectionPool {
   }
 
   /**
-     * Close the pool and all connections in the pool.
-     * 
-     * After closing, pop() will throw an error,
-     * push() will close the connection immediately.
-     */
+   * Close the pool and all connections in the pool.
+   * 
+   * After closing, pop() will throw an error,
+   * push() will close the connection immediately.
+   */
   close() {
     this._closed = true;
 
     let conn: PoolConnection | undefined;
     while (conn = this._deferred.tryPopAvailable()) {
+      conn.exitIdle();
       conn.close();
       this.reduceSize();
     }
