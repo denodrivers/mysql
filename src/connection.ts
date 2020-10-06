@@ -35,7 +35,7 @@ export class Connection {
   capabilities: number = 0;
   serverVersion: string = "";
 
-  private conn?: Deno.Conn;
+  private conn?: Deno.Conn = undefined;
 
   constructor(readonly config: ClientConfig) {}
 
