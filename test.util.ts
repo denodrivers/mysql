@@ -1,4 +1,4 @@
-import { Client, Connection } from "./mod.ts";
+import { Client, ClientConfig, Connection } from "./mod.ts";
 
 const { DB_PORT, DB_NAME, DB_PASSWORD, DB_USER, DB_HOST } = Deno.env.toObject();
 const port = DB_PORT ? parseInt(DB_PORT) : 3306;
@@ -18,12 +18,16 @@ const config = {
   charset: "utf8mb4",
   password,
 };
-
-export function testWithClient(fn: (client: Client) => void | Promise<void>) {
+export function testWithClient(
+  fn: (client: Client) => void | Promise<void>,
+  overrideConfig?: ClientConfig,
+) {
   Deno.test({
     name: fn.name,
     async fn() {
-      const client = await new Client().connect(config);
+      const client = await new Client().connect(
+        { ...config, ...overrideConfig },
+      );
       try {
         await fn(client);
       } finally {
@@ -45,4 +49,8 @@ export async function createTestDB() {
 
 export function isMariaDB(connection: Connection): boolean {
   return connection.serverVersion.includes("MariaDB");
+}
+
+export function delay(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
