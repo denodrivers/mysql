@@ -77,16 +77,21 @@ export class ConnectionPool {
       conn.close();
       this.reduceSize();
     }
-    conn.enterIdle();
-    this._deferred.push(conn);
+    if (this._deferred.push(conn)) {
+      conn.enterIdle();
+    }
   }
 
   async pop(): Promise<PoolConnection> {
     if (this._closed) {
       throw new Error("Connection pool is closed");
     }
-    const conn = await this._deferred.pop();
-    conn.exitIdle();
+    let conn = this._deferred.tryPopAvailable();
+    if (conn) {
+      conn.exitIdle();
+    } else {
+      conn = await this._deferred.pop();
+    }
     return conn;
   }
 
