@@ -46,6 +46,18 @@ export class DeferredStack<T> {
     }
   }
 
+  tryPopAvailable() {
+    return this._array.pop();
+  }
+
+  remove(item: T): boolean {
+    const index = this._array.indexOf(item);
+    if (index < 0) return false;
+    this._array.splice(index, 1);
+    this._size--;
+    return true;
+  }
+
   reduceSize() {
     this._size--;
   }
