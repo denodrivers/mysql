@@ -214,3 +214,6 @@ testWithClient(async function testTransactionRollback(client) {
 });
 
 await createTestDB();
+
+await new Promise((r) => setTimeout(r, 0));
+// Workaround to https://github.com/denoland/deno/issues/7844
