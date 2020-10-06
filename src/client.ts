@@ -49,7 +49,7 @@ export class Client {
 
   /** get pool info */
   get pool() {
-      return this._pool?.info;
+    return this._pool?.info;
   }
 
   /**
