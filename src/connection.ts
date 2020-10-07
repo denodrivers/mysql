@@ -99,10 +99,12 @@ export class Connection {
       throw new ConnnectionError("Not connected");
     }
 
-    const timeoutTimer = setTimeout(
-      this._timeoutCallback,
-      this.config.timeout || 30000,
-    );
+    const timeoutTimer = this.config.timeout
+      ? setTimeout(
+        this._timeoutCallback,
+        this.config.timeout,
+      )
+      : null;
     let packet: ReceivePacket | null;
     try {
       packet = await new ReceivePacket().parse(this.conn!);
@@ -111,11 +113,11 @@ export class Connection {
         // Connection has been closed by timeoutCallback.
         throw new ResponseTimeoutError("Connection read timed out");
       }
-      clearTimeout(timeoutTimer);
+      timeoutTimer && clearTimeout(timeoutTimer);
       this.close();
       throw error;
     }
-    clearTimeout(timeoutTimer);
+    timeoutTimer && clearTimeout(timeoutTimer);
 
     if (!packet) {
       // Connection is half-closed by the remote host.
