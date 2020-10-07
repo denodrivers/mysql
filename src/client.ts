@@ -1,5 +1,4 @@
-import { Connection, ExecuteResult } from "./connection.ts";
-import { ResponseTimeoutError, WriteError } from "./constant/errors.ts";
+import { Connection, ConnectionState, ExecuteResult } from "./connection.ts";
 import { ConnectionPool, PoolConnection } from "./pool.ts";
 import { log } from "./logger.ts";
 
@@ -102,19 +101,13 @@ export class Client {
     }
     const connection = await this._pool.pop();
     try {
-      const result = await fn(connection);
-      connection.returnToPool();
-      return result;
-    } catch (error) {
-      if (
-        error instanceof WriteError ||
-        error instanceof ResponseTimeoutError
-      ) {
+      return await fn(connection);
+    } finally {
+      if (connection.state == ConnectionState.CLOSED) {
         connection.removeFromPool();
       } else {
         connection.returnToPool();
       }
-      throw error;
     }
   }
 
@@ -131,8 +124,10 @@ export class Client {
         await connection.execute("COMMIT");
         return result;
       } catch (error) {
-        log.info(`ROLLBACK: ${error.message}`);
-        await connection.execute("ROLLBACK");
+        if (connection.state == ConnectionState.CONNECTED) {
+          log.info(`ROLLBACK: ${error.message}`);
+          await connection.execute("ROLLBACK");
+        }
         throw error;
       }
     });
