@@ -17,13 +17,13 @@ export interface ClientConfig {
   port?: number;
   /** Database name */
   db?: string;
-  /** Whether to Display Packet Debugging Information */
+  /** Whether to display packet debugging information */
   debug?: boolean;
   /** Connect timeout */
   timeout?: number;
-  /** Connection pool size default 1 */
+  /** Connection pool size (default: 1) */
   poolSize?: number;
-  /** Connection pool idle timeout */
+  /** Connection pool idle timeout in microseconds (default: 4 hours) */
   idleTimeout?: number;
   /** charset */
   charset?: string;
@@ -63,7 +63,7 @@ export class Client {
       username: "root",
       port: 3306,
       poolSize: 1,
-      idleTimeout: 4 * 3600 * 1000, // 4 hours
+      idleTimeout: 4 * 3600 * 1000,
       ...config,
     };
     Object.freeze(this.config);
