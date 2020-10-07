@@ -83,10 +83,8 @@ export class Connection {
         await this.execute(`SET NAMES ${this.config.charset}`);
       }
     } catch (error) {
-      if (this.state != ConnectionState.CLOSED) {
-        // Call close() to avoid leaking socket.
-        this.close();
-      }
+      // Call close() to avoid leaking socket.
+      this.close();
       throw error;
     }
   }
@@ -162,10 +160,11 @@ export class Connection {
 
   /** Close database connection */
   close(): void {
-    log.info("close connection");
-    this.state = ConnectionState.CLOSING;
-    this.conn && this.conn.close();
-    this.state = ConnectionState.CLOSED;
+    if (this.state != ConnectionState.CLOSED) {
+      log.info("close connection");
+      this.conn?.close();
+      this.state = ConnectionState.CLOSED;
+    }
   }
 
   /**
@@ -199,9 +198,7 @@ export class Connection {
     try {
       await new SendPacket(data, 0).send(this.conn!);
     } catch (error) {
-      if (this.state as ConnectionState != ConnectionState.CLOSED) {
-        this.close();
-      }
+      this.close();
       throw error;
     }
     let receive = await this.nextPacket();
