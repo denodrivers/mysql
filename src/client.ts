@@ -18,7 +18,7 @@ export interface ClientConfig {
   db?: string;
   /** Whether to display packet debugging information */
   debug?: boolean;
-  /** Connect timeout */
+  /** Connection read timeout (default: 30 seconds) */
   timeout?: number;
   /** Connection pool size (default: 1) */
   poolSize?: number;
@@ -62,6 +62,7 @@ export class Client {
       username: "root",
       port: 3306,
       poolSize: 1,
+      timeout: 30 * 1000,
       idleTimeout: 4 * 3600 * 1000,
       ...config,
     };
