@@ -40,6 +40,7 @@ export class Connection {
   constructor(readonly config: ClientConfig) {}
 
   private async _connect() {
+    // TODO: implement connect timeout
     const { hostname, port = 3306 } = this.config;
     log.info(`connecting ${hostname}:${port}`);
     this.conn = await Deno.connect({
@@ -83,24 +84,18 @@ export class Connection {
   }
 
   private async nextPacket(): Promise<ReceivePacket> {
-    let eofCount = 0;
-    const timeout = this.config.timeout || 1000;
-
     while (this.conn!) {
+      // TODO: implement read timeout
       const packet = await new ReceivePacket().parse(this.conn!);
-      if (packet) {
-        if (packet.type === "ERR") {
-          packet.body.skip(1);
-          const error = parseError(packet.body, this);
-          throw new Error(error.message);
-        }
-        return packet!;
-      } else {
-        await delay(100);
-        if (eofCount++ * 100 >= timeout) {
-          throw new ResponseTimeoutError("Read packet timeout");
-        }
+      if (!packet) {
+        throw new ResponseTimeoutError("Connection closed unexpectedly");
       }
+      if (packet.type === "ERR") {
+        packet.body.skip(1);
+        const error = parseError(packet.body, this);
+        throw new Error(error.message);
+      }
+      return packet!;
     }
     throw new Error("Not connected");
   }
