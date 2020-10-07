@@ -3,7 +3,10 @@ import {
   assertThrowsAsync,
   semver,
 } from "./test.deps.ts";
-import { ConnnectionError } from "./src/constant/errors.ts";
+import {
+  ConnnectionError,
+  ResponseTimeoutError,
+} from "./src/constant/errors.ts";
 import { createTestDB, testWithClient, isMariaDB, delay } from "./test.util.ts";
 
 testWithClient(async function testCreateDb(client) {
@@ -246,6 +249,22 @@ testWithClient(async function testIdleTimeout(client) {
   });
 }, {
   idleTimeout: 750,
+});
+
+testWithClient(async function testReadTimeout(client) {
+  await client.execute("select sleep(0.3)");
+
+  await assertThrowsAsync(async () => {
+    await client.execute("select sleep(0.7)");
+  }, ResponseTimeoutError);
+
+  assertEquals(client.pool, {
+    maxSize: 3,
+    available: 0,
+    size: 0,
+  });
+}, {
+  timeout: 500,
 });
 
 await createTestDB();
