@@ -1,6 +1,10 @@
 import { delay } from "../deps.ts";
 import { ClientConfig } from "./client.ts";
-import { ResponseTimeoutError } from "./constant/errors.ts";
+import {
+  ConnnectionError,
+  ReadError,
+  ResponseTimeoutError,
+} from "./constant/errors.ts";
 import { log } from "./logger.ts";
 import { buildAuth } from "./packets/builders/auth.ts";
 import { buildQuery } from "./packets/builders/query.ts";
@@ -36,6 +40,7 @@ export class Connection {
   serverVersion: string = "";
 
   private conn?: Deno.Conn = undefined;
+  private _timedOut = false;
 
   constructor(readonly config: ClientConfig) {}
 
@@ -49,32 +54,40 @@ export class Connection {
       transport: "tcp",
     });
 
-    let receive = await this.nextPacket();
-    const handshakePacket = parseHandshake(receive.body);
-    const data = buildAuth(handshakePacket, {
-      username: this.config.username ?? "",
-      password: this.config.password,
-      db: this.config.db,
-    });
-    await new SendPacket(data, 0x1).send(this.conn);
-    this.state = ConnectionState.CONNECTING;
-    this.serverVersion = handshakePacket.serverVersion;
-    this.capabilities = handshakePacket.serverCapabilities;
+    try {
+      let receive = await this.nextPacket();
+      const handshakePacket = parseHandshake(receive.body);
+      const data = buildAuth(handshakePacket, {
+        username: this.config.username ?? "",
+        password: this.config.password,
+        db: this.config.db,
+      });
+      await new SendPacket(data, 0x1).send(this.conn);
+      this.state = ConnectionState.CONNECTING;
+      this.serverVersion = handshakePacket.serverVersion;
+      this.capabilities = handshakePacket.serverCapabilities;
 
-    receive = await this.nextPacket();
-    const header = receive.body.readUint8();
-    if (header === 0xff) {
-      const error = parseError(receive.body, this);
-      log.error(`connect error(${error.code}): ${error.message}`);
-      this.close();
-      throw new Error(error.message);
-    } else {
-      log.info(`connected to ${this.config.hostname}`);
-      this.state = ConnectionState.CONNECTED;
-    }
+      receive = await this.nextPacket();
+      const header = receive.body.readUint8();
+      if (header === 0xff) {
+        const error = parseError(receive.body, this);
+        log.error(`connect error(${error.code}): ${error.message}`);
+        this.close();
+        throw new Error(error.message);
+      } else {
+        log.info(`connected to ${this.config.hostname}`);
+        this.state = ConnectionState.CONNECTED;
+      }
 
-    if (this.config.charset) {
-      await this.execute(`SET NAMES ${this.config.charset}`);
+      if (this.config.charset) {
+        await this.execute(`SET NAMES ${this.config.charset}`);
+      }
+    } catch (error) {
+      if (this.state != ConnectionState.CLOSED) {
+        // Call close() to avoid leaking socket.
+        this.close();
+      }
+      throw error;
     }
   }
 
@@ -84,21 +97,47 @@ export class Connection {
   }
 
   private async nextPacket(): Promise<ReceivePacket> {
-    while (this.conn!) {
-      // TODO: implement read timeout
-      const packet = await new ReceivePacket().parse(this.conn!);
-      if (!packet) {
-        throw new ResponseTimeoutError("Connection closed unexpectedly");
-      }
-      if (packet.type === "ERR") {
-        packet.body.skip(1);
-        const error = parseError(packet.body, this);
-        throw new Error(error.message);
-      }
-      return packet!;
+    if (!this.conn) {
+      throw new ConnnectionError("Not connected");
     }
-    throw new Error("Not connected");
+
+    const timeoutTimer = setTimeout(
+      this._timeoutCallback,
+      this.config.timeout || 30000,
+    );
+    let packet: ReceivePacket | null;
+    try {
+      packet = await new ReceivePacket().parse(this.conn!);
+    } catch (error) {
+      if (this._timedOut) {
+        // Connection has been closed by timeoutCallback.
+        throw new ResponseTimeoutError("Connection read timed out");
+      }
+      clearTimeout(timeoutTimer);
+      this.close();
+      throw error;
+    }
+    clearTimeout(timeoutTimer);
+
+    if (!packet) {
+      // Connection is half-closed by the remote host.
+      // Call close() to avoid leaking socket.
+      this.close();
+      throw new ReadError("Connection closed unexpectedly");
+    }
+    if (packet.type === "ERR") {
+      packet.body.skip(1);
+      const error = parseError(packet.body, this);
+      throw new Error(error.message);
+    }
+    return packet!;
   }
+
+  private _timeoutCallback = () => {
+    log.info("connection read timed out");
+    this._timedOut = true;
+    this.close();
+  };
 
   /**
    * Check if database server version is less than 5.7.0
@@ -149,11 +188,22 @@ export class Connection {
    * @param params query params
    */
   async execute(sql: string, params?: any[]): Promise<ExecuteResult> {
-    if (!this.conn) {
-      throw new Error("Must be connected first");
+    if (this.state != ConnectionState.CONNECTED) {
+      if (this.state == ConnectionState.CLOSED) {
+        throw new ConnnectionError("Connection is closed");
+      } else {
+        throw new ConnnectionError("Must be connected first");
+      }
     }
     const data = buildQuery(sql, params);
-    await new SendPacket(data, 0).send(this.conn);
+    try {
+      await new SendPacket(data, 0).send(this.conn!);
+    } catch (error) {
+      if (this.state as ConnectionState != ConnectionState.CLOSED) {
+        this.close();
+      }
+      throw error;
+    }
     let receive = await this.nextPacket();
     if (receive.type === "OK") {
       receive.body.skip(1);

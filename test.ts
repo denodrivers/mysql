@@ -3,7 +3,7 @@ import {
   assertThrowsAsync,
   semver,
 } from "./test.deps.ts";
-import { WriteError } from "./src/constant/errors.ts";
+import { ConnnectionError } from "./src/constant/errors.ts";
 import { createTestDB, testWithClient, isMariaDB, delay } from "./test.util.ts";
 
 testWithClient(async function testCreateDb(client) {
@@ -177,7 +177,7 @@ testWithClient(async function testQueryOnClosed(client) {
         conn.close();
         await conn.query("SELECT 1");
       });
-    }, WriteError);
+    }, ConnnectionError);
   }
   assertEquals(client.pool?.size, 0);
   await client.query("select 1");
