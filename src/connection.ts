@@ -1,6 +1,10 @@
 import { delay } from "../deps.ts";
 import { ClientConfig } from "./client.ts";
-import { ResponseTimeoutError } from "./constant/errors.ts";
+import {
+  ConnnectionError,
+  ReadError,
+  ResponseTimeoutError,
+} from "./constant/errors.ts";
 import { log } from "./logger.ts";
 import { buildAuth } from "./packets/builders/auth.ts";
 import { buildQuery } from "./packets/builders/query.ts";
@@ -35,11 +39,13 @@ export class Connection {
   capabilities: number = 0;
   serverVersion: string = "";
 
-  private conn?: Deno.Conn;
+  private conn?: Deno.Conn = undefined;
+  private _timedOut = false;
 
   constructor(readonly config: ClientConfig) {}
 
   private async _connect() {
+    // TODO: implement connect timeout
     const { hostname, port = 3306 } = this.config;
     log.info(`connecting ${hostname}:${port}`);
     this.conn = await Deno.connect({
@@ -48,32 +54,38 @@ export class Connection {
       transport: "tcp",
     });
 
-    let receive = await this.nextPacket();
-    const handshakePacket = parseHandshake(receive.body);
-    const data = buildAuth(handshakePacket, {
-      username: this.config.username ?? "",
-      password: this.config.password,
-      db: this.config.db,
-    });
-    await new SendPacket(data, 0x1).send(this.conn);
-    this.state = ConnectionState.CONNECTING;
-    this.serverVersion = handshakePacket.serverVersion;
-    this.capabilities = handshakePacket.serverCapabilities;
+    try {
+      let receive = await this.nextPacket();
+      const handshakePacket = parseHandshake(receive.body);
+      const data = buildAuth(handshakePacket, {
+        username: this.config.username ?? "",
+        password: this.config.password,
+        db: this.config.db,
+      });
+      await new SendPacket(data, 0x1).send(this.conn);
+      this.state = ConnectionState.CONNECTING;
+      this.serverVersion = handshakePacket.serverVersion;
+      this.capabilities = handshakePacket.serverCapabilities;
 
-    receive = await this.nextPacket();
-    const header = receive.body.readUint8();
-    if (header === 0xff) {
-      const error = parseError(receive.body, this);
-      log.error(`connect error(${error.code}): ${error.message}`);
+      receive = await this.nextPacket();
+      const header = receive.body.readUint8();
+      if (header === 0xff) {
+        const error = parseError(receive.body, this);
+        log.error(`connect error(${error.code}): ${error.message}`);
+        this.close();
+        throw new Error(error.message);
+      } else {
+        log.info(`connected to ${this.config.hostname}`);
+        this.state = ConnectionState.CONNECTED;
+      }
+
+      if (this.config.charset) {
+        await this.execute(`SET NAMES ${this.config.charset}`);
+      }
+    } catch (error) {
+      // Call close() to avoid leaking socket.
       this.close();
-      throw new Error(error.message);
-    } else {
-      log.info(`connected to ${this.config.hostname}`);
-      this.state = ConnectionState.CONNECTED;
-    }
-
-    if (this.config.charset) {
-      await this.execute(`SET NAMES ${this.config.charset}`);
+      throw error;
     }
   }
 
@@ -83,27 +95,49 @@ export class Connection {
   }
 
   private async nextPacket(): Promise<ReceivePacket> {
-    let eofCount = 0;
-    const timeout = this.config.timeout || 1000;
-
-    while (this.conn!) {
-      const packet = await new ReceivePacket().parse(this.conn!);
-      if (packet) {
-        if (packet.type === "ERR") {
-          packet.body.skip(1);
-          const error = parseError(packet.body, this);
-          throw new Error(error.message);
-        }
-        return packet!;
-      } else {
-        await delay(100);
-        if (eofCount++ * 100 >= timeout) {
-          throw new ResponseTimeoutError("Read packet timeout");
-        }
-      }
+    if (!this.conn) {
+      throw new ConnnectionError("Not connected");
     }
-    throw new Error("Not connected");
+
+    const timeoutTimer = this.config.timeout
+      ? setTimeout(
+        this._timeoutCallback,
+        this.config.timeout,
+      )
+      : null;
+    let packet: ReceivePacket | null;
+    try {
+      packet = await new ReceivePacket().parse(this.conn!);
+    } catch (error) {
+      if (this._timedOut) {
+        // Connection has been closed by timeoutCallback.
+        throw new ResponseTimeoutError("Connection read timed out");
+      }
+      timeoutTimer && clearTimeout(timeoutTimer);
+      this.close();
+      throw error;
+    }
+    timeoutTimer && clearTimeout(timeoutTimer);
+
+    if (!packet) {
+      // Connection is half-closed by the remote host.
+      // Call close() to avoid leaking socket.
+      this.close();
+      throw new ReadError("Connection closed unexpectedly");
+    }
+    if (packet.type === "ERR") {
+      packet.body.skip(1);
+      const error = parseError(packet.body, this);
+      throw new Error(error.message);
+    }
+    return packet!;
   }
+
+  private _timeoutCallback = () => {
+    log.info("connection read timed out");
+    this._timedOut = true;
+    this.close();
+  };
 
   /**
    * Check if database server version is less than 5.7.0
@@ -128,10 +162,11 @@ export class Connection {
 
   /** Close database connection */
   close(): void {
-    log.info("close connection");
-    this.state = ConnectionState.CLOSING;
-    this.conn && this.conn.close();
-    this.state = ConnectionState.CLOSED;
+    if (this.state != ConnectionState.CLOSED) {
+      log.info("close connection");
+      this.conn?.close();
+      this.state = ConnectionState.CLOSED;
+    }
   }
 
   /**
@@ -154,11 +189,20 @@ export class Connection {
    * @param params query params
    */
   async execute(sql: string, params?: any[]): Promise<ExecuteResult> {
-    if (!this.conn) {
-      throw new Error("Must be connected first");
+    if (this.state != ConnectionState.CONNECTED) {
+      if (this.state == ConnectionState.CLOSED) {
+        throw new ConnnectionError("Connection is closed");
+      } else {
+        throw new ConnnectionError("Must be connected first");
+      }
     }
     const data = buildQuery(sql, params);
-    await new SendPacket(data, 0).send(this.conn);
+    try {
+      await new SendPacket(data, 0).send(this.conn!);
+    } catch (error) {
+      this.close();
+      throw error;
+    }
     let receive = await this.nextPacket();
     if (receive.type === "OK") {
       receive.body.skip(1);
