@@ -1,22 +1,10 @@
-export class ConnnectionError extends Error {
+export class WriteError extends Error {
   constructor(msg?: string) {
     super(msg);
   }
 }
 
-export class WriteError extends ConnnectionError {
-  constructor(msg?: string) {
-    super(msg);
-  }
-}
-
-export class ReadError extends ConnnectionError {
-  constructor(msg?: string) {
-    super(msg);
-  }
-}
-
-export class ResponseTimeoutError extends ConnnectionError {
+export class ResponseTimeoutError extends Error {
   constructor(msg?: string) {
     super(msg);
   }

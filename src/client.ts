@@ -1,5 +1,6 @@
-import { Connection, ConnectionState, ExecuteResult } from "./connection.ts";
-import { ConnectionPool, PoolConnection } from "./pool.ts";
+import { Connection, ExecuteResult } from "./connection.ts";
+import { ResponseTimeoutError, WriteError } from "./constant/errors.ts";
+import { DeferredStack } from "./deferred.ts";
 import { log } from "./logger.ts";
 
 /**
@@ -16,14 +17,12 @@ export interface ClientConfig {
   port?: number;
   /** Database name */
   db?: string;
-  /** Whether to display packet debugging information */
+  /** Whether to Display Packet Debugging Information */
   debug?: boolean;
-  /** Connection read timeout (default: 30 seconds) */
+  /** Connect timeout */
   timeout?: number;
-  /** Connection pool size (default: 1) */
+  /** Connection pool size default 1 */
   poolSize?: number;
-  /** Connection pool idle timeout in microseconds (default: 4 hours) */
-  idleTimeout?: number;
   /** charset */
   charset?: string;
 }
@@ -38,17 +37,24 @@ export interface TransactionProcessor<T> {
  */
 export class Client {
   config: ClientConfig = {};
-  private _pool?: ConnectionPool;
+  private _pool?: DeferredStack<Connection>;
+  private _connections: Connection[] = [];
 
-  private async createConnection(): Promise<PoolConnection> {
-    let connection = new PoolConnection(this.config);
+  private async createConnection(): Promise<Connection> {
+    let connection: Connection = new Connection(this.config);
     await connection.connect();
     return connection;
   }
 
   /** get pool info */
   get pool() {
-    return this._pool?.info;
+    if (this._pool) {
+      return {
+        size: this._pool.size,
+        maxSize: this._pool.maxSize,
+        available: this._pool.available,
+      };
+    }
   }
 
   /**
@@ -62,13 +68,13 @@ export class Client {
       username: "root",
       port: 3306,
       poolSize: 1,
-      timeout: 30 * 1000,
-      idleTimeout: 4 * 3600 * 1000,
       ...config,
     };
     Object.freeze(this.config);
-    this._pool = new ConnectionPool(
+    this._connections = [];
+    this._pool = new DeferredStack<Connection>(
       this.config.poolSize || 10,
+      this._connections,
       this.createConnection.bind(this),
     );
     return this;
@@ -102,13 +108,19 @@ export class Client {
     }
     const connection = await this._pool.pop();
     try {
-      return await fn(connection);
-    } finally {
-      if (connection.state == ConnectionState.CLOSED) {
-        connection.removeFromPool();
+      const result = await fn(connection);
+      this._pool.push(connection);
+      return result;
+    } catch (error) {
+      if (
+        error instanceof WriteError ||
+        error instanceof ResponseTimeoutError
+      ) {
+        this._pool.reduceSize();
       } else {
-        connection.returnToPool();
+        this._pool.push(connection);
       }
+      throw error;
     }
   }
 
@@ -125,10 +137,8 @@ export class Client {
         await connection.execute("COMMIT");
         return result;
       } catch (error) {
-        if (connection.state == ConnectionState.CONNECTED) {
-          log.info(`ROLLBACK: ${error.message}`);
-          await connection.execute("ROLLBACK");
-        }
+        log.info(`ROLLBACK: ${error.message}`);
+        await connection.execute("ROLLBACK");
         throw error;
       }
     });
@@ -138,9 +148,6 @@ export class Client {
    * close connection
    */
   async close() {
-    if (this._pool) {
-      this._pool.close();
-      this._pool = undefined;
-    }
+    await Promise.all(this._connections.map((conn) => conn.close()));
   }
 }

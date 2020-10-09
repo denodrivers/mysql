@@ -3,11 +3,8 @@ import {
   assertThrowsAsync,
   semver,
 } from "./test.deps.ts";
-import {
-  ConnnectionError,
-  ResponseTimeoutError,
-} from "./src/constant/errors.ts";
-import { createTestDB, testWithClient, isMariaDB, delay } from "./test.util.ts";
+import { WriteError } from "./src/constant/errors.ts";
+import { createTestDB, testWithClient, isMariaDB } from "./test.util.ts";
 
 testWithClient(async function testCreateDb(client) {
   await client.query(`CREATE DATABASE IF NOT EXISTS enok`);
@@ -180,7 +177,7 @@ testWithClient(async function testQueryOnClosed(client) {
         conn.close();
         await conn.query("SELECT 1");
       });
-    }, ConnnectionError);
+    }, WriteError);
   }
   assertEquals(client.pool?.size, 0);
   await client.query("select 1");
@@ -216,58 +213,4 @@ testWithClient(async function testTransactionRollback(client) {
   assertEquals([{ name: "transaction1" }], result);
 });
 
-testWithClient(async function testIdleTimeout(client) {
-  assertEquals(client.pool, {
-    maxSize: 3,
-    available: 0,
-    size: 0,
-  });
-  await Promise.all(new Array(10).fill(0).map(() => client.query("select 1")));
-  assertEquals(client.pool, {
-    maxSize: 3,
-    available: 3,
-    size: 3,
-  });
-  await delay(500);
-  assertEquals(client.pool, {
-    maxSize: 3,
-    available: 3,
-    size: 3,
-  });
-  await client.query("select 1");
-  await delay(500);
-  assertEquals(client.pool, {
-    maxSize: 3,
-    available: 1,
-    size: 1,
-  });
-  await delay(500);
-  assertEquals(client.pool, {
-    maxSize: 3,
-    available: 0,
-    size: 0,
-  });
-}, {
-  idleTimeout: 750,
-});
-
-testWithClient(async function testReadTimeout(client) {
-  await client.execute("select sleep(0.3)");
-
-  await assertThrowsAsync(async () => {
-    await client.execute("select sleep(0.7)");
-  }, ResponseTimeoutError);
-
-  assertEquals(client.pool, {
-    maxSize: 3,
-    available: 0,
-    size: 0,
-  });
-}, {
-  timeout: 500,
-});
-
 await createTestDB();
-
-await new Promise((r) => setTimeout(r, 0));
-// Workaround to https://github.com/denoland/deno/issues/7844
