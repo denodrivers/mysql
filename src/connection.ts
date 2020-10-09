@@ -199,43 +199,43 @@ export class Connection {
     const data = buildQuery(sql, params);
     try {
       await new SendPacket(data, 0).send(this.conn!);
+      let receive = await this.nextPacket();
+      if (receive.type === "OK") {
+        receive.body.skip(1);
+        return {
+          affectedRows: receive.body.readEncodedLen(),
+          lastInsertId: receive.body.readEncodedLen(),
+        };
+      }
+      let fieldCount = receive.body.readEncodedLen();
+      const fields: FieldInfo[] = [];
+      while (fieldCount--) {
+        const packet = await this.nextPacket();
+        if (packet) {
+          const field = parseField(packet.body);
+          fields.push(field);
+        }
+      }
+
+      const rows = [];
+      if (this.lessThan57()) {
+        // EOF(less than 5.7)
+        receive = await this.nextPacket();
+      }
+
+      while (true) {
+        receive = await this.nextPacket();
+        if (receive.type === "EOF") {
+          break;
+        } else {
+          const row = parseRow(receive.body, fields);
+          rows.push(row);
+        }
+      }
+      return { rows, fields };
     } catch (error) {
       this.close();
       throw error;
     }
-    let receive = await this.nextPacket();
-    if (receive.type === "OK") {
-      receive.body.skip(1);
-      return {
-        affectedRows: receive.body.readEncodedLen(),
-        lastInsertId: receive.body.readEncodedLen(),
-      };
-    }
-    let fieldCount = receive.body.readEncodedLen();
-    const fields: FieldInfo[] = [];
-    while (fieldCount--) {
-      const packet = await this.nextPacket();
-      if (packet) {
-        const field = parseField(packet.body);
-        fields.push(field);
-      }
-    }
-
-    const rows = [];
-    if (this.lessThan57()) {
-      // EOF(less than 5.7)
-      receive = await this.nextPacket();
-    }
-
-    while (true) {
-      receive = await this.nextPacket();
-      if (receive.type === "EOF") {
-        break;
-      } else {
-        const row = parseRow(receive.body, fields);
-        rows.push(row);
-      }
-    }
-    return { rows, fields };
   }
 }
