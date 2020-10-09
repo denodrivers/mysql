@@ -44,14 +44,17 @@ export class ReceivePacket {
     let nread = await reader.read(header.buffer);
     if (nread === null) return null;
     readCount = nread;
+    const bodySize = header.readUints(3);
     this.header = {
-      size: header.readUints(3),
+      size: bodySize,
       no: header.readUint8(),
     };
-    this.body = new BufferReader(new Uint8Array(this.header.size));
-    nread = await reader.read(this.body.buffer);
-    if (nread === null) return null;
-    readCount += nread;
+    this.body = new BufferReader(new Uint8Array(bodySize));
+    for (let bodyRead = 0; bodyRead < bodySize; bodyRead += nread) {
+      nread = await reader.read(this.body.buffer.subarray(bodyRead));
+      if (nread === null) return null;
+      readCount += nread;
+    }
 
     switch (this.body.buffer[0]) {
       case 0x00:
