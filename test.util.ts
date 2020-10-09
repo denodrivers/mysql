@@ -1,4 +1,5 @@
 import { Client, ClientConfig, Connection } from "./mod.ts";
+import { assertEquals } from "./test.deps.ts";
 
 const { DB_PORT, DB_NAME, DB_PASSWORD, DB_USER, DB_HOST } = Deno.env.toObject();
 const port = DB_PORT ? parseInt(DB_PORT) : 3306;
@@ -25,6 +26,7 @@ export function testWithClient(
   Deno.test({
     name: fn.name,
     async fn() {
+      const resources = Deno.resources();
       const client = await new Client().connect(
         { ...config, ...overrideConfig },
       );
@@ -33,6 +35,11 @@ export function testWithClient(
       } finally {
         await client.close();
       }
+      assertEquals(
+        Deno.resources(),
+        resources,
+        "The client is leaking resources",
+      );
     },
   });
 }
