@@ -21,3 +21,9 @@ export class ResponseTimeoutError extends ConnnectionError {
     super(msg);
   }
 }
+
+export class ProtocolError extends ConnnectionError {
+  constructor(msg?: string) {
+    super(msg);
+  }
+}

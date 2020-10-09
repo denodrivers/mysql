@@ -2,6 +2,7 @@ import { delay } from "../deps.ts";
 import { ClientConfig } from "./client.ts";
 import {
   ConnnectionError,
+  ProtocolError,
   ReadError,
   ResponseTimeoutError,
 } from "./constant/errors.ts";
@@ -206,6 +207,8 @@ export class Connection {
           affectedRows: receive.body.readEncodedLen(),
           lastInsertId: receive.body.readEncodedLen(),
         };
+      } else if (receive.type !== "RESULT") {
+        throw new ProtocolError();
       }
       let fieldCount = receive.body.readEncodedLen();
       const fields: FieldInfo[] = [];
@@ -221,6 +224,9 @@ export class Connection {
       if (this.lessThan57()) {
         // EOF(less than 5.7)
         receive = await this.nextPacket();
+        if (receive.type !== "EOF") {
+          throw new ProtocolError();
+        }
       }
 
       while (true) {
