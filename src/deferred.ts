@@ -35,15 +35,30 @@ export class DeferredStack<T> {
     }
     const defer = deferred<T>();
     this._queue.push(defer);
-    await defer;
-    return this._array.pop()!;
+    return await defer;
   }
 
-  async push(item: T) {
-    this._array.push(item);
+  /** Returns false if the item is consumed by a deferred pop */
+  push(item: T): boolean {
     if (this._queue.length) {
-      this._queue.shift()!.resolve();
+      this._queue.shift()!.resolve(item);
+      return false;
+    } else {
+      this._array.push(item);
+      return true;
     }
+  }
+
+  tryPopAvailable() {
+    return this._array.pop();
+  }
+
+  remove(item: T): boolean {
+    const index = this._array.indexOf(item);
+    if (index < 0) return false;
+    this._array.splice(index, 1);
+    this._size--;
+    return true;
   }
 
   reduceSize() {
