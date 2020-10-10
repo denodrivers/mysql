@@ -267,6 +267,21 @@ testWithClient(async function testReadTimeout(client) {
   timeout: 500,
 });
 
+testWithClient(async function testLargeQueryAndResponse(client) {
+  function buildLargeString(len: number) {
+    let str = "";
+    for (let i = 0; i < len; i++) {
+      str += (i % 10);
+    }
+    return str;
+  }
+  const largeString = buildLargeString(512 * 1024);
+  assertEquals(
+    await client.query(`select "${largeString}" as str`),
+    [{ str: largeString }],
+  );
+});
+
 await createTestDB();
 
 await new Promise((r) => setTimeout(r, 0));
