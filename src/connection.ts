@@ -47,13 +47,18 @@ export class Connection {
 
   private async _connect() {
     // TODO: implement connect timeout
-    const { hostname, port = 3306 } = this.config;
+    const { hostname, port = 3306, socketPath } = this.config;
     log.info(`connecting ${hostname}:${port}`);
-    this.conn = await Deno.connect({
-      hostname,
-      port,
-      transport: "tcp",
-    });
+    this.conn = !socketPath
+      ? await Deno.connect({
+        transport: "tcp",
+        hostname,
+        port,
+      })
+      : await Deno.connect({
+        transport: "unix",
+        path: socketPath,
+      } as any);
 
     try {
       let receive = await this.nextPacket();
