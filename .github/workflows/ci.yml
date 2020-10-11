@@ -21,14 +21,31 @@ jobs:
 
     steps:
       - uses: actions/checkout@v1
-      - name: Install Deno
+      - name: Install Deno 1.2.2
         uses: denolib/setup-deno@master
         with:
           deno-version: 1.2.2
       - name: check fmt
         run: deno fmt --check
-      - name: test ts
+      - name: Start ${{ matrix.DB_VERSION }}
         run: |
-          docker container run --rm -d -p 3306:3306 -e MYSQL_ALLOW_EMPTY_PASSWORD=true ${{ matrix.DB_VERSION }}
+          sudo mkdir -p /var/run/mysqld/tmp
+          sudo chmod -R 777 /var/run/mysqld
+          docker container run --rm -d -p 3306:3306 \
+            -v /var/run/mysqld:/var/run/mysqld \
+            -v /var/run/mysqld/tmp:/tmp \
+            -e MYSQL_ALLOW_EMPTY_PASSWORD=true \
+            ${{ matrix.DB_VERSION }}
           ./.github/workflows/wait-for-mysql.sh
+      - name: Run tests (TCP)
+        run: |
           deno test --allow-env --allow-net=127.0.0.1:3306 ./test.ts
+      - name: Run tests (UNIX domain socket)
+        run: |
+          SOCKPATH=/var/run/mysqld/mysqld.sock
+          if [[ "${{ matrix.DB_VERSION }}" == "mysql:5.5" ]]; then
+            SOCKPATH=/var/run/mysqld/tmp/mysql.sock
+          fi
+          DB_SOCKPATH=$SOCKPATH TEST_METHODS=unix \
+            deno test --unstable --allow-env --allow-net=127.0.0.1:3306 \
+            --allow-read=/var/run/mysqld/ ./test.ts

@@ -1,13 +1,15 @@
-import {
-  assertEquals,
-  assertThrowsAsync,
-  semver,
-} from "./test.deps.ts";
+import { assertEquals, assertThrowsAsync, semver } from "./test.deps.ts";
 import {
   ConnnectionError,
   ResponseTimeoutError,
 } from "./src/constant/errors.ts";
-import { createTestDB, testWithClient, isMariaDB, delay } from "./test.util.ts";
+import {
+  createTestDB,
+  delay,
+  isMariaDB,
+  registerTests,
+  testWithClient,
+} from "./test.util.ts";
 
 testWithClient(async function testCreateDb(client) {
   await client.query(`CREATE DATABASE IF NOT EXISTS enok`);
@@ -281,6 +283,8 @@ testWithClient(async function testLargeQueryAndResponse(client) {
     [{ str: largeString }],
   );
 });
+
+registerTests();
 
 await createTestDB();
 
