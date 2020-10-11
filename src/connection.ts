@@ -43,12 +43,18 @@ export class Connection {
   private conn?: Deno.Conn = undefined;
   private _timedOut = false;
 
+  get remoteAddr(): string {
+    return this.config.socketPath
+      ? `unix:${this.config.socketPath}`
+      : `${this.config.hostname}:${this.config.port}`;
+  }
+
   constructor(readonly config: ClientConfig) {}
 
   private async _connect() {
     // TODO: implement connect timeout
     const { hostname, port = 3306, socketPath } = this.config;
-    log.info(`connecting ${hostname}:${port}`);
+    log.info(`connecting ${this.remoteAddr}`);
     this.conn = !socketPath
       ? await Deno.connect({
         transport: "tcp",
@@ -81,7 +87,7 @@ export class Connection {
         this.close();
         throw new Error(error.message);
       } else {
-        log.info(`connected to ${this.config.hostname}`);
+        log.info(`connected to ${this.remoteAddr}`);
         this.state = ConnectionState.CONNECTED;
       }
 
