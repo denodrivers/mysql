@@ -25,7 +25,10 @@ export class SendPacket {
     data.writeBuffer(body);
     log.debug(`send: ${data.length}B \n${byteFormat(data.buffer)}\n`);
     try {
-      await conn.write(data.buffer);
+      let wrote = 0;
+      do {
+        wrote += await conn.write(data.buffer.subarray(wrote));
+      } while (wrote < data.length);
     } catch (error) {
       throw new WriteError(error.message);
     }

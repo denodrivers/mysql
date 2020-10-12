@@ -8,6 +8,8 @@ import { log } from "./logger.ts";
 export interface ClientConfig {
   /** Database hostname */
   hostname?: string;
+  /** Database UNIX domain socket path. When used, `hostname` and `port` are ignored. */
+  socketPath?: string;
   /** Database username */
   username?: string;
   /** Database password */
