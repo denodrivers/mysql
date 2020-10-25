@@ -44,7 +44,7 @@ export class ReceivePacket {
   async parse(reader: Deno.Reader): Promise<ReceivePacket | null> {
     const header = new BufferReader(new Uint8Array(4));
     let readCount = 0;
-    let nread = await reader.read(header.buffer);
+    let nread = await this.read(reader, header.buffer);
     if (nread === null) return null;
     readCount = nread;
     const bodySize = header.readUints(3);
@@ -53,11 +53,9 @@ export class ReceivePacket {
       no: header.readUint8(),
     };
     this.body = new BufferReader(new Uint8Array(bodySize));
-    for (let bodyRead = 0; bodyRead < bodySize; bodyRead += nread) {
-      nread = await reader.read(this.body.buffer.subarray(bodyRead));
-      if (nread === null) return null;
-      readCount += nread;
-    }
+    nread = await this.read(reader, this.body.buffer);
+    if (nread === null) return null;
+    readCount += nread;
 
     switch (this.body.buffer[0]) {
       case 0x00:
@@ -86,5 +84,19 @@ export class ReceivePacket {
     });
 
     return this;
+  }
+
+  private async read(
+    reader: Deno.Reader,
+    buffer: Uint8Array,
+  ): Promise<number | null> {
+    const size = buffer.length;
+    let haveRead = 0;
+    while (haveRead < size) {
+      const nread = await reader.read(buffer.subarray(haveRead));
+      if (nread === null) return null;
+      haveRead += nread;
+    }
+    return haveRead;
   }
 }
