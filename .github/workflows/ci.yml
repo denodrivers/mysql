@@ -3,10 +3,24 @@ name: ci
 on: [push, pull_request]
 
 jobs:
-  build:
+  fmt:
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v1
+      - name: Install Deno 1.x
+        uses: denolib/setup-deno@master
+        with:
+          deno-version: v1.x
+      - name: Check fmt
+        run: deno fmt --check
+  test:
     runs-on: ubuntu-latest
     strategy:
       matrix:
+        DENO_VERSION:
+          - v1.2.2
+          - v1.x
         DB_VERSION:
           - mysql:5.5
           - mysql:5.6
@@ -21,12 +35,12 @@ jobs:
 
     steps:
       - uses: actions/checkout@v1
-      - name: Install Deno 1.2.2
+      - name: Install Deno ${{ matrix.DENO_VERSION }}
         uses: denolib/setup-deno@master
         with:
-          deno-version: 1.2.2
-      - name: check fmt
-        run: deno fmt --check
+          deno-version: ${{ matrix.DENO_VERSION }}
+      - name: Show Deno version
+        run: deno --version
       - name: Start ${{ matrix.DB_VERSION }}
         run: |
           sudo mkdir -p /var/run/mysqld/tmp
@@ -40,7 +54,7 @@ jobs:
       - name: Run tests (TCP)
         run: |
           deno test --allow-env --allow-net=127.0.0.1:3306 ./test.ts
-      - name: Run tests (UNIX domain socket)
+      - name: Run tests (--unstable) (UNIX domain socket)
         run: |
           SOCKPATH=/var/run/mysqld/mysqld.sock
           if [[ "${{ matrix.DB_VERSION }}" == "mysql:5.5" ]]; then
