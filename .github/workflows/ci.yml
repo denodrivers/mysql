@@ -3,7 +3,18 @@ name: ci
 on: [push, pull_request]
 
 jobs:
-  build:
+  fmt:
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v1
+      - name: Install Deno 1.x
+        uses: denolib/setup-deno@master
+        with:
+          deno-version: v1.x
+      - name: Check fmt
+        run: deno fmt --check
+  test:
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -28,8 +39,8 @@ jobs:
         uses: denolib/setup-deno@master
         with:
           deno-version: ${{ matrix.DENO_VERSION }}
-      - name: check fmt
-        run: deno fmt --check
+      - name: Show Deno version
+        run: deno --version
       - name: Start ${{ matrix.DB_VERSION }}
         run: |
           sudo mkdir -p /var/run/mysqld/tmp
@@ -52,7 +63,3 @@ jobs:
           DB_SOCKPATH=$SOCKPATH TEST_METHODS=unix \
             deno test --unstable --allow-env --allow-net=127.0.0.1:3306 \
             --allow-read=/var/run/mysqld/ ./test.ts
-      - name: Install Deno 1.2.2
-        uses: denolib/setup-deno@master
-        with:
-          deno-version: 1.2.2
