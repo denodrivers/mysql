@@ -18,8 +18,8 @@ import {
   MYSQL_TYPE_TIMESTAMP,
   MYSQL_TYPE_TIMESTAMP2,
   MYSQL_TYPE_TINY,
-  MYSQL_TYPE_VARCHAR,
   MYSQL_TYPE_VAR_STRING,
+  MYSQL_TYPE_VARCHAR,
 } from "../../constant/mysql_types.ts";
 
 /** @ignore */
