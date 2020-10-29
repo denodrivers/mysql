@@ -30,7 +30,13 @@ export class DeferredStack<T> {
       return this._array.pop()!;
     } else if (this._size < this._maxSize) {
       this._size++;
-      const item = await this.creator();
+      let item: T;
+      try {
+        item = await this.creator();
+      } catch (err) {
+        this._size--;
+        throw err;
+      }
       return item;
     }
     const defer = deferred<T>();
