@@ -1,4 +1,4 @@
-import { decode, encode, byteFormat } from "../deps.ts";
+import { decode, encode } from "../deps.ts";
 
 /** @ignore */
 export class BufferReader {

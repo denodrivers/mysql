@@ -1,4 +1,4 @@
-import { BufferReader } from "../../buffer.ts";
+import type { BufferReader } from "../../buffer.ts";
 import {
   MYSQL_TYPE_DATE,
   MYSQL_TYPE_DATETIME,
@@ -18,8 +18,8 @@ import {
   MYSQL_TYPE_TIMESTAMP,
   MYSQL_TYPE_TIMESTAMP2,
   MYSQL_TYPE_TINY,
-  MYSQL_TYPE_VARCHAR,
   MYSQL_TYPE_VAR_STRING,
+  MYSQL_TYPE_VARCHAR,
 } from "../../constant/mysql_types.ts";
 
 /** @ignore */
@@ -71,12 +71,12 @@ export function parseField(reader: BufferReader): FieldInfo {
 }
 
 /** @ignore */
-export function parseRow(reader: BufferReader, fileds: FieldInfo[]): any {
+export function parseRow(reader: BufferReader, fields: FieldInfo[]): any {
   const row: any = {};
-  for (let i = 0; i < fileds.length; i++) {
-    const name = fileds[i].name;
+  for (const field of fields) {
+    const name = field.name;
     const val = reader.readLenCodeString();
-    row[name] = val === null ? null : convertType(fileds[i], val);
+    row[name] = val === null ? null : convertType(field, val);
   }
   return row;
 }

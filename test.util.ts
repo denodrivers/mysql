@@ -1,13 +1,16 @@
-import { Client, Connection } from "./mod.ts";
+import { Client, ClientConfig, Connection } from "./mod.ts";
+import { assertEquals, parse } from "./test.deps.ts";
 
-const { DB_PORT, DB_NAME, DB_PASSWORD, DB_USER, DB_HOST } = Deno.env.toObject();
+const { DB_PORT, DB_NAME, DB_PASSWORD, DB_USER, DB_HOST, DB_SOCKPATH } = Deno
+  .env.toObject();
 const port = DB_PORT ? parseInt(DB_PORT) : 3306;
 const db = DB_NAME || "test";
 const password = DB_PASSWORD;
 const username = DB_USER || "root";
 const hostname = DB_HOST || "127.0.0.1";
+const sockPath = DB_SOCKPATH || "/var/run/mysqld/mysqld.sock";
 
-const config = {
+const config: ClientConfig = {
   timeout: 10000,
   poolSize: 3,
   debug: true,
@@ -19,20 +22,60 @@ const config = {
   password,
 };
 
-export function testWithClient(fn: (client: Client) => void | Promise<void>) {
-  Deno.test({
-    name: fn.name,
-    async fn() {
-      const client = await new Client().connect(config);
-      try {
-        await fn(client);
-        await client.close();
-      } catch (error) {
-        await client.close();
-        throw error;
-      }
-    },
-  });
+const tests: (Parameters<typeof testWithClient>)[] = [];
+
+export function testWithClient(
+  fn: (client: Client) => void | Promise<void>,
+  overrideConfig?: ClientConfig,
+): void {
+  tests.push([fn, overrideConfig]);
+}
+
+export function registerTests(methods?: ("tcp" | "unix")[]) {
+  if (!methods) {
+    methods = Deno.env.get("TEST_METHODS")?.split(",") as any || ["tcp"];
+  }
+  if (methods!.includes("tcp")) {
+    tests.forEach(([fn, overrideConfig]) => {
+      Deno.test({
+        name: fn.name + " (TCP)",
+        async fn() {
+          await test({ ...config, ...overrideConfig }, fn);
+        },
+      });
+    });
+  }
+  if (methods!.includes("unix")) {
+    tests.forEach(([fn, overrideConfig]) => {
+      Deno.test({
+        name: fn.name + " (UNIX domain socket)",
+        async fn() {
+          await test(
+            { ...config, socketPath: sockPath, ...overrideConfig },
+            fn,
+          );
+        },
+      });
+    });
+  }
+}
+
+async function test(
+  config: ClientConfig,
+  fn: (client: Client) => void | Promise<void>,
+) {
+  const resources = Deno.resources();
+  const client = await new Client().connect(config);
+  try {
+    await fn(client);
+  } finally {
+    await client.close();
+  }
+  assertEquals(
+    Deno.resources(),
+    resources,
+    "The client is leaking resources",
+  );
 }
 
 export async function createTestDB() {
@@ -47,4 +90,8 @@ export async function createTestDB() {
 
 export function isMariaDB(connection: Connection): boolean {
   return connection.serverVersion.includes("MariaDB");
+}
+
+export function delay(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }

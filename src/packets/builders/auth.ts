@@ -2,34 +2,26 @@ import auth from "../../auth.ts";
 import { BufferWriter } from "../../buffer.ts";
 import ServerCapabilities from "../../constant/capabilities.ts";
 import { Charset } from "../../constant/charset.ts";
-import { HandshakeBody } from "../parsers/handshake.ts";
+import type { HandshakeBody } from "../parsers/handshake.ts";
 
 /** @ignore */
 export function buildAuth(
   packet: HandshakeBody,
   params: { username: string; password?: string; db?: string },
 ): Uint8Array {
-  let clientParam: number =
+  const clientParam: number =
     (params.db ? ServerCapabilities.CLIENT_CONNECT_WITH_DB : 0) |
     ServerCapabilities.CLIENT_PLUGIN_AUTH |
     ServerCapabilities.CLIENT_LONG_PASSWORD |
     ServerCapabilities.CLIENT_PROTOCOL_41 |
     ServerCapabilities.CLIENT_TRANSACTIONS |
     ServerCapabilities.CLIENT_MULTI_RESULTS |
-    ServerCapabilities.CLIENT_SECURE_CONNECTION;
+    ServerCapabilities.CLIENT_SECURE_CONNECTION |
+    (ServerCapabilities.CLIENT_LONG_FLAG & packet.serverCapabilities) |
+    (ServerCapabilities.CLIENT_PLUGIN_AUTH_LENENC_CLIENT_DATA &
+      packet.serverCapabilities) |
+    (ServerCapabilities.CLIENT_DEPRECATE_EOF & packet.serverCapabilities);
 
-  if (packet.serverCapabilities & ServerCapabilities.CLIENT_LONG_FLAG) {
-    clientParam |= ServerCapabilities.CLIENT_LONG_FLAG;
-  }
-  if (
-    packet.serverCapabilities &
-    ServerCapabilities.CLIENT_PLUGIN_AUTH_LENENC_CLIENT_DATA
-  ) {
-    clientParam |= ServerCapabilities.CLIENT_PLUGIN_AUTH_LENENC_CLIENT_DATA;
-  }
-  if (packet.serverCapabilities & ServerCapabilities.CLIENT_DEPRECATE_EOF) {
-    clientParam |= ServerCapabilities.CLIENT_DEPRECATE_EOF;
-  }
   if (packet.serverCapabilities & ServerCapabilities.CLIENT_PLUGIN_AUTH) {
     const writer = new BufferWriter(new Uint8Array(1000));
     writer

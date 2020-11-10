@@ -26,7 +26,10 @@ export class SendPacket {
     data.writeBuffer(body);
     log.debug(`send: ${data.length}B \n${byteFormat(data.buffer)}\n`);
     try {
-      await conn.write(data.buffer);
+      let wrote = 0;
+      do {
+        wrote += await conn.write(data.buffer.subarray(wrote));
+      } while (wrote < data.length);
     } catch (error) {
       throw new WriteError(error.message);
     }
@@ -42,16 +45,16 @@ export class ReceivePacket {
   async parse(reader: Deno.Reader): Promise<ReceivePacket | null> {
     const header = new BufferReader(new Uint8Array(4));
     let readCount = 0;
-    let nread = await reader.read(header.buffer);
+    let nread = await this.read(reader, header.buffer);
     if (nread === null) return null;
     readCount = nread;
+    const bodySize = header.readUints(3);
     this.header = {
-      size: header.readUints(3),
+      size: bodySize,
       no: header.readUint8(),
     };
-
-    this.body = new BufferReader(new Uint8Array(this.header.size));
-    nread = await reader.read(this.body.buffer);
+    this.body = new BufferReader(new Uint8Array(bodySize));
+    nread = await this.read(reader, this.body.buffer);
     if (nread === null) return null;
     readCount += nread;
 
@@ -83,5 +86,19 @@ export class ReceivePacket {
     });
 
     return this;
+  }
+
+  private async read(
+    reader: Deno.Reader,
+    buffer: Uint8Array,
+  ): Promise<number | null> {
+    const size = buffer.length;
+    let haveRead = 0;
+    while (haveRead < size) {
+      const nread = await reader.read(buffer.subarray(haveRead));
+      if (nread === null) return null;
+      haveRead += nread;
+    }
+    return haveRead;
   }
 }
