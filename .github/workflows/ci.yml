@@ -28,6 +28,7 @@ jobs:
           - mysql:8
           - mysql:latest
           - mariadb:5.5
+          - mariadb:10.1
           - mariadb:10.2
           - mariadb:10.3
           - mariadb:10.4
