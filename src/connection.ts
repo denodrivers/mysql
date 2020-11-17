@@ -162,7 +162,7 @@ export class Connection {
    * and "x.y.z-MariaDB-[build-infos]" for 5.x versions
    *   eg "5.5.64-MariaDB-1~trusty"
    */
-  private lessThan57(): Boolean {
+  private lessThan5_7(): Boolean {
     const version = this.serverVersion;
     if (!version.includes("MariaDB")) return version < "5.7.0";
     const segments = version.split("-");
@@ -170,6 +170,13 @@ export class Connection {
     if (segments[1] === "MariaDB") return segments[0] < "5.7.0";
     // MariaDB v10+
     return false;
+  }
+
+  /** Checks if the MariaDB version is 10.1 */
+  private isMariaDBAndVersion10_1(): Boolean {
+    const version = this.serverVersion;
+    if (!version.includes("MariaDB")) return false;
+    return version.includes("5.5.5-10.1");
   }
 
   /** Close database connection */
@@ -232,8 +239,8 @@ export class Connection {
       }
 
       const rows = [];
-      if (this.lessThan57()) {
-        // EOF(less than 5.7)
+      if (this.lessThan5_7() || this.isMariaDBAndVersion10_1()) {
+        // EOF(less than 5.7 or mariadb version 10.1)
         receive = await this.nextPacket();
         if (receive.type !== "EOF") {
           throw new ProtocolError();
