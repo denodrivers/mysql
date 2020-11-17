@@ -162,7 +162,7 @@ export class Connection {
    * and "x.y.z-MariaDB-[build-infos]" for 5.x versions
    *   eg "5.5.64-MariaDB-1~trusty"
    */
-  private lessThan57(): Boolean {
+  private lessThan5_7(): Boolean {
     const version = this.serverVersion;
     if (!version.includes("MariaDB")) return version < "5.7.0";
     const segments = version.split("-");
@@ -232,7 +232,7 @@ export class Connection {
       }
 
       const rows = [];
-      if (this.lessThan57()) {
+      if (this.lessThan5_7()) {
         // EOF(less than 5.7)
         receive = await this.nextPacket();
         if (receive.type !== "EOF") {
