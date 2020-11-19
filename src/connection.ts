@@ -172,11 +172,11 @@ export class Connection {
     return false;
   }
 
-  /** Checks if the MariaDB version is 10.1 */
-  private isMariaDBAndVersion10_1(): Boolean {
+  /** Check if the MariaDB version is 10.0 or 10.1 */
+  private isMariaDBAndVersion10_0Or10_1(): Boolean {
     const version = this.serverVersion;
     if (!version.includes("MariaDB")) return false;
-    return version.includes("5.5.5-10.1");
+    return version.includes("5.5.5-10.1") || version.includes("5.5.5-10.0");
   }
 
   /** Close database connection */
@@ -239,8 +239,8 @@ export class Connection {
       }
 
       const rows = [];
-      if (this.lessThan5_7() || this.isMariaDBAndVersion10_1()) {
-        // EOF(less than 5.7 or mariadb version 10.1)
+      if (this.lessThan5_7() || this.isMariaDBAndVersion10_0Or10_1()) {
+        // EOF(less than 5.7 or mariadb version is 10.0 or 10.1)
         receive = await this.nextPacket();
         if (receive.type !== "EOF") {
           throw new ProtocolError();
