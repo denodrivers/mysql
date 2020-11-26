@@ -53,7 +53,7 @@ testWithClient(async function testQuery(client) {
     "select ??,`is_top`,`name` from ?? where id = ?",
     ["id", "users", 1],
   );
-  assertEquals(result, [{ id: 1, name: "MYR🦕", is_top: false }]);
+  assertEquals(result, [{ id: 1, name: "MYR🦕", is_top: 0 }]);
 });
 
 testWithClient(async function testQueryErrorOccurred(client) {

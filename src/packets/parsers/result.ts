@@ -84,9 +84,6 @@ export function parseRow(reader: BufferReader, fields: FieldInfo[]): any {
 /** @ignore */
 function convertType(field: FieldInfo, val: string): any {
   const { fieldType, fieldLen } = field;
-  if (fieldType === MYSQL_TYPE_TINY && fieldLen === 1) {
-    return !!parseInt(val);
-  }
   switch (fieldType) {
     case MYSQL_TYPE_DECIMAL:
     case MYSQL_TYPE_DOUBLE:
