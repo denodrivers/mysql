@@ -64,4 +64,5 @@ jobs:
           fi
           DB_SOCKPATH=$SOCKPATH TEST_METHODS=unix \
             deno test --unstable --allow-env --allow-net=127.0.0.1:3306 \
-            --allow-read=/var/run/mysqld/ ./test.ts
+            --allow-read=/var/run/mysqld/ --allow-write=/var/run/mysqld/ \
+            ./test.ts
