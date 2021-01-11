@@ -1,4 +1,4 @@
-import { delay } from "../deps.ts";
+import { byteFormat, delay } from "../deps.ts";
 import { ClientConfig } from "./client.ts";
 import {
   ConnnectionError,
@@ -11,8 +11,14 @@ import { buildAuth } from "./packets/builders/auth.ts";
 import { buildQuery } from "./packets/builders/query.ts";
 import { ReceivePacket, SendPacket } from "./packets/packet.ts";
 import { parseError } from "./packets/parsers/err.ts";
-import { parseHandshake } from "./packets/parsers/handshake.ts";
+import {
+  AuthResult,
+  parseAuth,
+  parseHandshake,
+} from "./packets/parsers/handshake.ts";
 import { FieldInfo, parseField, parseRow } from "./packets/parsers/result.ts";
+import { PacketType } from "./constant/packet.ts";
+import authPlugin from "./auth_plugin/index.ts";
 
 /**
  * Connection state
@@ -53,7 +59,8 @@ export class Connection {
 
   private async _connect() {
     // TODO: implement connect timeout
-    const { hostname, port = 3306, socketPath } = this.config;
+    const { hostname, port = 3306, socketPath, username = "", password } =
+      this.config;
     log.info(`connecting ${this.remoteAddr}`);
     this.conn = !socketPath
       ? await Deno.connect({
@@ -70,16 +77,51 @@ export class Connection {
       let receive = await this.nextPacket();
       const handshakePacket = parseHandshake(receive.body);
       const data = buildAuth(handshakePacket, {
-        username: this.config.username ?? "",
-        password: this.config.password,
+        username,
+        password,
         db: this.config.db,
       });
+
       await new SendPacket(data, 0x1).send(this.conn);
+
       this.state = ConnectionState.CONNECTING;
       this.serverVersion = handshakePacket.serverVersion;
       this.capabilities = handshakePacket.serverCapabilities;
 
       receive = await this.nextPacket();
+
+      const authResult = parseAuth(receive);
+      let handler;
+
+      switch (authResult) {
+        case AuthResult.AuthMoreRequired:
+          const adaptedPlugin =
+            (authPlugin as any)[handshakePacket.authPluginName];
+          handler = adaptedPlugin;
+          break;
+        case AuthResult.MethodMismatch:
+          // TODO: Negotiate
+          throw new Error("Currently cannot support auth method mismatch!");
+      }
+
+      let result;
+      if (handler) {
+        result = handler.start(handshakePacket.seed, password!);
+        while (!result.done) {
+          if (result.data) {
+            const sequenceNumber = receive.header.no + 1;
+            await new SendPacket(result.data, sequenceNumber).send(this.conn);
+            receive = await this.nextPacket();
+          }
+          if (result.quickRead) {
+            await this.nextPacket();
+          }
+          if (result.next) {
+            result = result.next(receive);
+          }
+        }
+      }
+
       const header = receive.body.readUint8();
       if (header === 0xff) {
         const error = parseError(receive.body, this);
@@ -137,7 +179,7 @@ export class Connection {
       this.close();
       throw new ReadError("Connection closed unexpectedly");
     }
-    if (packet.type === "ERR") {
+    if (packet.type === PacketType.ERR_Packet) {
       packet.body.skip(1);
       const error = parseError(packet.body, this);
       throw new Error(error.message);
@@ -219,13 +261,13 @@ export class Connection {
     try {
       await new SendPacket(data, 0).send(this.conn!);
       let receive = await this.nextPacket();
-      if (receive.type === "OK") {
+      if (receive.type === PacketType.OK_Packet) {
         receive.body.skip(1);
         return {
           affectedRows: receive.body.readEncodedLen(),
           lastInsertId: receive.body.readEncodedLen(),
         };
-      } else if (receive.type !== "RESULT") {
+      } else if (receive.type !== PacketType.Result) {
         throw new ProtocolError();
       }
       let fieldCount = receive.body.readEncodedLen();
@@ -242,14 +284,14 @@ export class Connection {
       if (this.lessThan5_7() || this.isMariaDBAndVersion10_0Or10_1()) {
         // EOF(less than 5.7 or mariadb version is 10.0 or 10.1)
         receive = await this.nextPacket();
-        if (receive.type !== "EOF") {
+        if (receive.type !== PacketType.EOF_Packet) {
           throw new ProtocolError();
         }
       }
 
       while (true) {
         receive = await this.nextPacket();
-        if (receive.type === "EOF") {
+        if (receive.type === PacketType.EOF_Packet) {
           break;
         } else {
           const row = parseRow(receive.body, fields);

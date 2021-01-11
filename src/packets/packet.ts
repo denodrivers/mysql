@@ -2,6 +2,7 @@ import { byteFormat } from "../../deps.ts";
 import { BufferReader, BufferWriter } from "../buffer.ts";
 import { WriteError } from "../constant/errors.ts";
 import { debug, log } from "../logger.ts";
+import { PacketType } from "../../src/constant/packet.ts";
 
 /** @ignore */
 interface PacketHeader {
@@ -39,7 +40,7 @@ export class SendPacket {
 export class ReceivePacket {
   header!: PacketHeader;
   body!: BufferReader;
-  type!: "EOF" | "OK" | "ERR" | "RESULT";
+  type!: PacketType;
 
   async parse(reader: Deno.Reader): Promise<ReceivePacket | null> {
     const header = new BufferReader(new Uint8Array(4));
@@ -57,18 +58,19 @@ export class ReceivePacket {
     if (nread === null) return null;
     readCount += nread;
 
+    const { OK_Packet, ERR_Packet, EOF_Packet, Result } = PacketType;
     switch (this.body.buffer[0]) {
-      case 0x00:
-        this.type = "OK";
+      case OK_Packet:
+        this.type = OK_Packet;
         break;
       case 0xff:
-        this.type = "ERR";
+        this.type = ERR_Packet;
         break;
       case 0xfe:
-        this.type = "EOF";
+        this.type = EOF_Packet;
         break;
       default:
-        this.type = "RESULT";
+        this.type = Result;
         break;
     }
 
