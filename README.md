@@ -133,6 +133,16 @@ console.log(users.length);
 await client.close();
 ```
 
+## Logging
+
+The driver logs to the console by default.
+
+To disable logging:
+```ts
+import { configLogger } from "https://deno.land/x/mysql/mod.ts";
+await configLogger({ enable: false });
+```
+
 ## Test
 
 The tests require a database to run against.
