@@ -7,7 +7,8 @@
 
 MySQL and MariaDB (5.5 and 10.0+) database driver for Deno.
 
-On this basis, there is also an ORM library: [Deno Simple Orm](https://github.com/manyuanrong/dso)
+On this basis, there is also an ORM library:
+[Deno Simple Orm](https://github.com/manyuanrong/dso)
 
 欢迎国内的小伙伴加我专门建的 Deno QQ 交流群：698469316
 
@@ -111,7 +112,7 @@ const username = "manyuanrong";
 const users = await client.query(`select * from users`);
 const queryWithParams = await client.query(
   "select ??,name from ?? where id = ?",
-  ["id", "users", 1]
+  ["id", "users", 1],
 );
 console.log(users, queryWithParams);
 ```
@@ -141,5 +142,5 @@ docker container run --rm -d -p 3306:3306 -e MYSQL_ALLOW_EMPTY_PASSWORD=true doc
 deno test --allow-env --allow-net=127.0.0.1:3306 ./test.ts
 ```
 
-Use different docker images to test against different versions of MySQL and MariaDB.
-Please see [ci.yml](./.github/workflows/ci.yml) for examples.
+Use different docker images to test against different versions of MySQL and
+MariaDB. Please see [ci.yml](./.github/workflows/ci.yml) for examples.
