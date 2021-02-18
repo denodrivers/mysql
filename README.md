@@ -138,6 +138,7 @@ await client.close();
 The driver logs to the console by default.
 
 To disable logging:
+
 ```ts
 import { configLogger } from "https://deno.land/x/mysql/mod.ts";
 await configLogger({ enable: false });
