@@ -1,6 +1,8 @@
 import { log } from "../deps.ts";
 
-export { log };
+let logger = log.getLogger();
+
+export { logger as log };
 
 let isDebug = false;
 
@@ -11,23 +13,39 @@ export function debug(func: Function) {
   }
 }
 
-/** @ignore */
-export async function config(config: { debug: boolean; logFile: string }) {
-  isDebug = config.debug;
-  await log.setup({
-    handlers: {
-      console: new log.handlers.ConsoleHandler(config.debug ? "DEBUG" : "INFO"),
-      file: new log.handlers.FileHandler("WARNING", {
-        filename: config.logFile,
-        formatter: "{levelName} {msg}",
-      }),
-    },
+export interface LoggerConfig {
+  /** Enable logging (default: true) */
+  enable?: boolean;
+  /** The minimal level to print (default: "INFO") */
+  level?: log.LevelName;
+  /** A deno_std/log.Logger instance to be used as logger. When used, `level` is ignored. */
+  logger?: log.Logger;
+}
 
-    loggers: {
-      default: {
-        level: "DEBUG",
-        handlers: ["console", "file"],
-      },
-    },
-  });
+export async function configLogger(config: LoggerConfig) {
+  let { enable = true, level = "INFO" } = config;
+  if (config.logger) level = config.logger.levelName;
+  isDebug = level == "DEBUG";
+
+  if (!enable) {
+    logger = new log.Logger("fakeLogger", "NOTSET", {});
+    logger.level = 100;
+  } else {
+    if (!config.logger) {
+      await log.setup({
+        handlers: {
+          console: new log.handlers.ConsoleHandler(level),
+        },
+        loggers: {
+          default: {
+            level: "DEBUG",
+            handlers: ["console"],
+          },
+        },
+      });
+      logger = log.getLogger();
+    } else {
+      logger = config.logger;
+    }
+  }
 }

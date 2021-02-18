@@ -10,6 +10,9 @@ import {
   registerTests,
   testWithClient,
 } from "./test.util.ts";
+import { log as stdlog } from "./deps.ts";
+import { log } from "./src/logger.ts";
+import { configLogger } from "./mod.ts";
 
 testWithClient(async function testCreateDb(client) {
   await client.query(`CREATE DATABASE IF NOT EXISTS enok`);
@@ -285,6 +288,36 @@ testWithClient(async function testLargeQueryAndResponse(client) {
 });
 
 registerTests();
+
+Deno.test("configLogger()", async () => {
+  let logCount = 0;
+  const fakeHandler = new class extends stdlog.handlers.BaseHandler {
+    constructor() {
+      super("INFO");
+    }
+    log(msg: string) {
+      logCount++;
+    }
+  }();
+
+  await stdlog.setup({
+    handlers: {
+      fake: fakeHandler,
+    },
+    loggers: {
+      mysql: {
+        handlers: ["fake"],
+      },
+    },
+  });
+  await configLogger({ logger: stdlog.getLogger("mysql") });
+  log.info("Test log");
+  assertEquals(logCount, 1);
+
+  await configLogger({ enable: false });
+  log.info("Test log");
+  assertEquals(logCount, 1);
+});
 
 await createTestDB();
 
