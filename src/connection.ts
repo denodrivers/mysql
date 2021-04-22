@@ -245,7 +245,7 @@ export class Connection {
   }
 
   /**
-   * excute sql
+   * execute sql
    * @param sql sql string
    * @param params query params
    */
@@ -299,6 +299,67 @@ export class Connection {
         }
       }
       return { rows, fields };
+    } catch (error) {
+      this.close();
+      throw error;
+    }
+  }
+
+  /**
+   * execute sql
+   * @param sql sql string
+   * @param params query params
+   */
+  async *exec_generator(sql: string, params?: any[]): AsyncGenerator<ExecuteResult> {
+    if (this.state != ConnectionState.CONNECTED) {
+      if (this.state == ConnectionState.CLOSED) {
+        throw new ConnnectionError("Connection is closed");
+      } else {
+        throw new ConnnectionError("Must be connected first");
+      }
+    }
+    const data = buildQuery(sql, params);
+    try {
+      await new SendPacket(data, 0).send(this.conn!);
+      let receive = await this.nextPacket();
+      if (receive.type === PacketType.OK_Packet) {
+        receive.body.skip(1);
+        // return {
+        //   affectedRows: receive.body.readEncodedLen(),
+        //   lastInsertId: receive.body.readEncodedLen(),
+        // };
+      } else if (receive.type !== PacketType.Result) {
+        throw new ProtocolError();
+      }
+      let fieldCount = receive.body.readEncodedLen();
+      const fields: FieldInfo[] = [];
+      while (fieldCount--) {
+        const packet = await this.nextPacket();
+        if (packet) {
+          const field = parseField(packet.body);
+          fields.push(field);
+        }
+      }
+
+      // const rows = [];
+      if (this.lessThan5_7() || this.isMariaDBAndVersion10_0Or10_1()) {
+        // EOF(less than 5.7 or mariadb version is 10.0 or 10.1)
+        receive = await this.nextPacket();
+        if (receive.type !== PacketType.EOF_Packet) {
+          throw new ProtocolError();
+        }
+      }
+
+      while (true) {
+        receive = await this.nextPacket();
+        if (receive.type === PacketType.EOF_Packet) {
+          break;
+        } else {
+          const row = parseRow(receive.body, fields);
+          yield row
+        }
+      }
+      // return { rows, fields };
     } catch (error) {
       this.close();
       throw error;
