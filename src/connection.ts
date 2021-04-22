@@ -310,7 +310,7 @@ export class Connection {
    * @param sql sql string
    * @param params query params
    */
-  async *exec_generator(sql: string, params?: any[]): AsyncGenerator<ExecuteResult> {
+  async* exec_generator(sql: string, params?: any[]): AsyncGenerator<any, any, any> {
     if (this.state != ConnectionState.CONNECTED) {
       if (this.state == ConnectionState.CLOSED) {
         throw new ConnnectionError("Connection is closed");

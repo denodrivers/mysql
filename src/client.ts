@@ -88,13 +88,24 @@ export class Client {
   }
 
   /**
-   * excute sql
+   * execute sql
    * @param sql sql string
    * @param params query params
    */
   async execute(sql: string, params?: any[]): Promise<ExecuteResult> {
     return await this.useConnection(async (connection) => {
       return await connection.execute(sql, params);
+    });
+  }
+
+  /**
+   * execute sql
+   * @param sql sql string
+   * @param params query params
+   */
+  async* execute_generator(sql: string, params?: any[]): AsyncGenerator<any, any, any> {
+    return await this.useConnection(async (connection) => {
+      return connection.exec_generator(sql, params)
     });
   }
 
