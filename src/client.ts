@@ -104,9 +104,24 @@ export class Client {
    * @param params query params
    */
   async* execute_generator(sql: string, params?: any[]): AsyncGenerator<any, any, any> {
-    return await this.useConnection(async (connection) => {
-      return connection.exec_generator(sql, params)
-    });
+    if (!this._pool) {
+      throw new Error("Unconnected");
+    }
+
+    const connection = await this._pool!.pop();
+
+    try {
+      const generator = connection.execute_generator(sql, params)
+      for await (let row of generator) {
+        yield row
+      }
+    } finally {
+      if (connection.state == ConnectionState.CLOSED) {
+        connection.removeFromPool();
+      } else {
+        connection.returnToPool();
+      }
+    }
   }
 
   async useConnection<T>(fn: (conn: Connection) => Promise<T>) {

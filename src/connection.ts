@@ -310,7 +310,7 @@ export class Connection {
    * @param sql sql string
    * @param params query params
    */
-  async* exec_generator(sql: string, params?: any[]): AsyncGenerator<any, any, any> {
+  async* execute_generator(sql: string, params?: any[]): AsyncGenerator<any, any, any> {
     if (this.state != ConnectionState.CONNECTED) {
       if (this.state == ConnectionState.CLOSED) {
         throw new ConnnectionError("Connection is closed");
@@ -324,6 +324,7 @@ export class Connection {
       let receive = await this.nextPacket();
       if (receive.type === PacketType.OK_Packet) {
         receive.body.skip(1);
+        // TODO -- unsupported for this operation
         // return {
         //   affectedRows: receive.body.readEncodedLen(),
         //   lastInsertId: receive.body.readEncodedLen(),
@@ -355,11 +356,9 @@ export class Connection {
         if (receive.type === PacketType.EOF_Packet) {
           break;
         } else {
-          const row = parseRow(receive.body, fields);
-          yield row
+          yield parseRow(receive.body, fields);
         }
       }
-      // return { rows, fields };
     } catch (error) {
       this.close();
       throw error;
