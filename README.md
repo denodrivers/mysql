@@ -1,7 +1,5 @@
 # deno_mysql
 
->**NOTE!!** This is a fork of the original [denodrivers/mysql](https://github.com/denodrivers/mysql) package. This one is optimized for some memory improvements. Changes done here will BREAK YOUR IMPLEMENTATION if you used the original `denodrivers/mysql` package.
-
 [![Build Status](https://github.com/manyuanrong/deno_mysql/workflows/ci/badge.svg?branch=master)](https://github.com/manyuanrong/deno_mysql/actions)
 ![GitHub](https://img.shields.io/github/license/manyuanrong/deno_mysql.svg)
 ![GitHub release](https://img.shields.io/github/release/manyuanrong/deno_mysql.svg)
