@@ -1,4 +1,3 @@
-import { byteFormat, delay } from "../deps.ts";
 import { ClientConfig } from "./client.ts";
 import {
   ConnnectionError,
@@ -31,13 +30,14 @@ export enum ConnectionState {
 }
 
 /**
- * Result for excute sql
+ * Result for execute sql
  */
 export type ExecuteResult = {
   affectedRows?: number;
   lastInsertId?: number;
   fields?: FieldInfo[];
   rows?: any[];
+  iterator?: any;
 };
 
 /** Connection for mysql */
@@ -248,8 +248,13 @@ export class Connection {
    * execute sql
    * @param sql sql string
    * @param params query params
+   * @param iterator whether to return an ExecuteIteratorResult or ExecuteResult
    */
-  async execute(sql: string, params?: any[]): Promise<ExecuteResult> {
+  async execute(
+    sql: string,
+    params?: any[],
+    iterator = false,
+  ): Promise<ExecuteResult> {
     if (this.state != ConnectionState.CONNECTED) {
       if (this.state == ConnectionState.CLOSED) {
         throw new ConnnectionError("Connection is closed");
@@ -289,79 +294,51 @@ export class Connection {
         }
       }
 
-      while (true) {
-        receive = await this.nextPacket();
-        if (receive.type === PacketType.EOF_Packet) {
-          break;
-        } else {
-          const row = parseRow(receive.body, fields);
-          rows.push(row);
+      if (!iterator) {
+        while (true) {
+          receive = await this.nextPacket();
+          if (receive.type === PacketType.EOF_Packet) {
+            break;
+          } else {
+            const row = parseRow(receive.body, fields);
+            rows.push(row);
+          }
         }
+        return { rows, fields };
       }
-      return { rows, fields };
+
+      return {
+        fields,
+        iterator: this.buildIterator(fields),
+      };
     } catch (error) {
       this.close();
       throw error;
     }
   }
 
-  /**
-   * execute sql
-   * @param sql sql string
-   * @param params query params
-   */
-  async* execute_generator(sql: string, params?: any[]): AsyncGenerator<any, any, any> {
-    if (this.state != ConnectionState.CONNECTED) {
-      if (this.state == ConnectionState.CLOSED) {
-        throw new ConnnectionError("Connection is closed");
-      } else {
-        throw new ConnnectionError("Must be connected first");
+  private buildIterator(fields: FieldInfo[]): any {
+    const next = async () => {
+      const receive = await this.nextPacket();
+
+      if (receive.type === PacketType.EOF_Packet) {
+        return { done: true };
       }
+
+      const value = parseRow(receive.body, fields);
+
+      return {
+        done: false,
+        value,
+      };
     }
-    const data = buildQuery(sql, params);
-    try {
-      await new SendPacket(data, 0).send(this.conn!);
-      let receive = await this.nextPacket();
-      if (receive.type === PacketType.OK_Packet) {
-        receive.body.skip(1);
-        // TODO -- unsupported for this operation
-        // return {
-        //   affectedRows: receive.body.readEncodedLen(),
-        //   lastInsertId: receive.body.readEncodedLen(),
-        // };
-      } else if (receive.type !== PacketType.Result) {
-        throw new ProtocolError();
-      }
-      let fieldCount = receive.body.readEncodedLen();
-      const fields: FieldInfo[] = [];
-      while (fieldCount--) {
-        const packet = await this.nextPacket();
-        if (packet) {
-          const field = parseField(packet.body);
-          fields.push(field);
-        }
-      }
 
-      // const rows = [];
-      if (this.lessThan5_7() || this.isMariaDBAndVersion10_0Or10_1()) {
-        // EOF(less than 5.7 or mariadb version is 10.0 or 10.1)
-        receive = await this.nextPacket();
-        if (receive.type !== PacketType.EOF_Packet) {
-          throw new ProtocolError();
-        }
-      }
-
-      while (true) {
-        receive = await this.nextPacket();
-        if (receive.type === PacketType.EOF_Packet) {
-          break;
-        } else {
-          yield parseRow(receive.body, fields);
-        }
-      }
-    } catch (error) {
-      this.close();
-      throw error;
+    return {
+      [Symbol.asyncIterator]: () => {
+        return {
+          next,
+        };
+      },
     }
   }
 }

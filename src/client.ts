@@ -77,7 +77,7 @@ export class Client {
   }
 
   /**
-   * excute query sql
+   * execute query sql
    * @param sql query sql string
    * @param params query params
    */
@@ -91,37 +91,12 @@ export class Client {
    * execute sql
    * @param sql sql string
    * @param params query params
+   * @param iterator whether to return an iterator or not
    */
-  async execute(sql: string, params?: any[]): Promise<ExecuteResult> {
+  async execute(sql: string, params?: any[], iterator = false): Promise<ExecuteResult> {
     return await this.useConnection(async (connection) => {
-      return await connection.execute(sql, params);
+      return await connection.execute(sql, params, iterator);
     });
-  }
-
-  /**
-   * execute sql
-   * @param sql sql string
-   * @param params query params
-   */
-  async* execute_generator(sql: string, params?: any[]): AsyncGenerator<any, any, any> {
-    if (!this._pool) {
-      throw new Error("Unconnected");
-    }
-
-    const connection = await this._pool!.pop();
-
-    try {
-      const generator = connection.execute_generator(sql, params)
-      for await (let row of generator) {
-        yield row
-      }
-    } finally {
-      if (connection.state == ConnectionState.CLOSED) {
-        connection.removeFromPool();
-      } else {
-        connection.returnToPool();
-      }
-    }
   }
 
   async useConnection<T>(fn: (conn: Connection) => Promise<T>) {
