@@ -114,11 +114,13 @@ console.log(users);
 
 The second one will return you an `iterator` key containing an `[Symbol.asyncIterator]` property:
 ```ts
-// note the third parameter of execute() method.
-const { iterator: users } = await client.execute(`select * from users`, /* params: */ [], /* iterator: */ false);
-for await (const user of users) {
-    console.log(user)
-}
+await client.useConnection(async (conn) => {
+  // note the third parameter of execute() method.
+  const { iterator: users } = await conn.execute(`select * from users`, /* params: */ [], /* iterator: */ false);
+  for await (const user of users) {
+      console.log(user);
+  }
+});
 ```
 
 The second method is recommended only for SELECT queries that might contain many results (e.g. 100k rows).

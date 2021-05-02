@@ -91,11 +91,10 @@ export class Client {
    * execute sql
    * @param sql sql string
    * @param params query params
-   * @param iterator whether to return an iterator or not
    */
-  async execute(sql: string, params?: any[], iterator = false): Promise<ExecuteResult> {
+  async execute(sql: string, params?: any[]): Promise<ExecuteResult> {
     return await this.useConnection(async (connection) => {
-      return await connection.execute(sql, params, iterator);
+      return await connection.execute(sql, params);
     });
   }
 
