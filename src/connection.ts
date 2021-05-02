@@ -331,7 +331,7 @@ export class Connection {
         done: false,
         value,
       };
-    }
+    };
 
     return {
       [Symbol.asyncIterator]: () => {
@@ -339,6 +339,6 @@ export class Connection {
           next,
         };
       },
-    }
+    };
   }
 }

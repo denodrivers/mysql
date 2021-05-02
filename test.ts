@@ -288,14 +288,14 @@ testWithClient(async function testLargeQueryAndResponse(client) {
 });
 
 testWithClient(async function testExecuteIterator(client) {
-  await client.useConnection(async conn => {
+  await client.useConnection(async (conn) => {
     await conn.execute(`DROP TABLE IF EXISTS numbers`);
     await conn.execute(`CREATE TABLE numbers (num INT NOT NULL)`);
-    await conn.execute(`INSERT INTO numbers (num) VALUES ${
-      new Array(64).fill(0).map((v, idx) =>
-        `(${idx})`
-      ).join(',')
-    }`);
+    await conn.execute(
+      `INSERT INTO numbers (num) VALUES ${
+        new Array(64).fill(0).map((v, idx) => `(${idx})`).join(",")
+      }`,
+    );
     const r = await conn.execute(`SELECT num FROM numbers`, [], true);
     let count = 0;
     for await (const row of r.iterator) {
