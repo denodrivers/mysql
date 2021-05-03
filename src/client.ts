@@ -77,7 +77,7 @@ export class Client {
   }
 
   /**
-   * excute query sql
+   * execute query sql
    * @param sql query sql string
    * @param params query params
    */
@@ -88,7 +88,7 @@ export class Client {
   }
 
   /**
-   * excute sql
+   * execute sql
    * @param sql sql string
    * @param params query params
    */
