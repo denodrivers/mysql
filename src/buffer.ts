@@ -47,13 +47,13 @@ export class BufferReader {
   readNullTerminatedString(): string {
     let end = this.buffer.indexOf(0x00, this.pos);
     if (end === -1) end = this.buffer.length;
-    const buf = this.buffer.slice(this.pos, end);
+    const buf = this.buffer.subarray(this.pos, end);
     this.pos += buf.length + 1;
     return decode(buf);
   }
 
   readString(len: number): string {
-    const str = decode(this.buffer.slice(this.pos, this.pos + len));
+    const str = decode(this.buffer.subarray(this.pos, this.pos + len));
     this.pos += len;
     return str;
   }
@@ -105,7 +105,7 @@ export class BufferWriter {
 
   writeBuffer(buffer: Uint8Array): BufferWriter {
     if (buffer.length > this.capacity) {
-      buffer = buffer.slice(0, this.capacity);
+      buffer = buffer.subarray(0, this.capacity);
     }
     this.buffer.set(buffer, this.pos);
     this.pos += buffer.length;

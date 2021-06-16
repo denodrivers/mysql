@@ -130,7 +130,7 @@ testWithClient(async function testQueryDecimal(client) {
 
 testWithClient(async function testQueryDatetime(client) {
   await client.useConnection(async (connection) => {
-    if (isMariaDB(connection) || semver.lt(connection.serverVersion, "5.6.0")) {
+    if (isMariaDB(connection) || semver.lt(connection.serverVersion.match(/^[\d\.]*/)?.[0] ?? '', "5.6.0")) { // connection.serverVersion can be like '8.0.25-0ubuntu0.21.04.1'
       return;
     }
 
@@ -304,6 +304,24 @@ testWithClient(async function testExecuteIterator(client) {
     }
     assertEquals(count, 64);
   });
+});
+
+testWithClient(async function testResetSessionState(client) {
+  let connectionId=-1, a;
+	await client.useConnection(async (conn) => {
+		await conn.query("SET @a=10");
+		[ { connectionId, a } ] = await conn.query("SELECT Connection_id() AS connectionId, @a AS a") as any;
+	});
+
+
+	let connectionId2=-1, a2;
+	await client.useConnection(async (conn) => {
+		[ { connectionId2, a2 } ] = await conn.query("SELECT Connection_id() AS connectionId2, @a AS a2") as any;
+	});
+
+	assertEquals(connectionId, connectionId2);
+	assertEquals(a, 10);
+	assertEquals(a2, null);
 });
 
 registerTests();

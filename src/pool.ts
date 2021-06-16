@@ -46,7 +46,7 @@ export class PoolConnection extends Connection {
   }
 
   returnToPool() {
-    this._pool?.push(this);
+    return this._pool?.push(this);
   }
 }
 
@@ -72,11 +72,20 @@ export class ConnectionPool {
     };
   }
 
-  push(conn: PoolConnection) {
+  async push(conn: PoolConnection) {
     if (this._closed) {
       conn.close();
       this.reduceSize();
     }
+
+    // Reset session state
+    try {
+      await conn.resetSessionState();
+    } catch (error) {
+      this.reduceSize();
+      return;
+    }
+
     if (this._deferred.push(conn)) {
       conn.enterIdle();
     }
@@ -101,7 +110,7 @@ export class ConnectionPool {
 
   /**
    * Close the pool and all connections in the pool.
-   * 
+   *
    * After closing, pop() will throw an error,
    * push() will close the connection immediately.
    */

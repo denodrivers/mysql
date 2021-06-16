@@ -8,6 +8,8 @@ import {
 import { log } from "./logger.ts";
 import { buildAuth } from "./packets/builders/auth.ts";
 import { buildQuery } from "./packets/builders/query.ts";
+import { buildChangeUser } from "./packets/builders/change_user.ts";
+import { buildAuthSwitchResponse } from "./packets/builders/auth_switch_response.ts";
 import { ReceivePacket, SendPacket } from "./packets/packet.ts";
 import { parseError } from "./packets/parsers/err.ts";
 import {
@@ -48,6 +50,7 @@ export class Connection {
 
   private conn?: Deno.Conn = undefined;
   private _timedOut = false;
+  private authPluginName = '';
 
   get remoteAddr(): string {
     return this.config.socketPath
@@ -76,6 +79,7 @@ export class Connection {
     try {
       let receive = await this.nextPacket();
       const handshakePacket = parseHandshake(receive.body);
+      this.authPluginName = handshakePacket.authPluginName;
       const data = buildAuth(handshakePacket, {
         username,
         password,
@@ -340,5 +344,35 @@ export class Connection {
         };
       },
     };
+  }
+
+  /**
+   * Reset session state: rollback incomplete transaction, clear user-level locks (acquired by "SELECT Get_lock('name', 0')"),
+   * clear session variables (set by "SET group_concat_max_len=65535, @hello='all'").
+   */
+  async resetSessionState() {
+    const {username, password, db} = this.config;
+    if (this.conn && username) {
+      const data = buildChangeUser(this.authPluginName, username, db ?? '');
+      try {
+        await new SendPacket(data, 0).send(this.conn);
+        let receive = await this.nextPacket();
+        if (receive.type === PacketType.EOF_Packet) {
+          receive.body.skip(1);
+          const authPluginName = receive.body.readNullTerminatedString();
+          let seed = receive.body.readBuffer(receive.body.buffer.length); // to the end of buffer
+          if (seed[seed.length - 1] == 0) {
+            seed = seed.subarray(0, seed.length - 1);
+          }
+          const data = buildAuthSwitchResponse(authPluginName, seed, password ?? '');
+          await new SendPacket(data, receive.header.no + 1).send(this.conn);
+          await this.nextPacket(); // throws if ERR_Packet
+        }
+      } catch (error) {
+        log.warning(error.message);
+        this.close();
+        throw error;
+      }
+    }
   }
 }

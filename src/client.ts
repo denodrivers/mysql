@@ -109,7 +109,7 @@ export class Client {
       if (connection.state == ConnectionState.CLOSED) {
         connection.removeFromPool();
       } else {
-        connection.returnToPool();
+        await connection.returnToPool();
       }
     }
   }
