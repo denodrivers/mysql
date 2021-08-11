@@ -19,7 +19,6 @@ jobs:
     strategy:
       matrix:
         DENO_VERSION:
-          - v1.2.2
           - v1.x
         DB_VERSION:
           - mysql:5.5
