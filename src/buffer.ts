@@ -1,4 +1,15 @@
-import { decode, encode } from "../deps.ts";
+const encoder = new TextEncoder();
+const decoder = new TextDecoder();
+
+/** @ignore */
+export function encode(input: string) {
+  return encoder.encode(input);
+}
+
+/** @ignore */
+export function decode(input: BufferSource) {
+  return decoder.decode(input);
+}
 
 /** @ignore */
 export class BufferReader {

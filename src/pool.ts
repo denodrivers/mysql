@@ -101,7 +101,7 @@ export class ConnectionPool {
 
   /**
    * Close the pool and all connections in the pool.
-   * 
+   *
    * After closing, pop() will throw an error,
    * push() will close the connection immediately.
    */

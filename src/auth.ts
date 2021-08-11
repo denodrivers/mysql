@@ -1,5 +1,6 @@
-import { createHash, encode, SupportedAlgorithm } from "../deps.ts";
+import { createHash, SupportedAlgorithm } from "../deps.ts";
 import { xor } from "./util.ts";
+import { encode } from "./buffer.ts";
 
 function hash(algorithm: SupportedAlgorithm, data: Uint8Array): Uint8Array {
   return new Uint8Array(createHash(algorithm).update(data).digest());
