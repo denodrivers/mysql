@@ -276,7 +276,7 @@ testWithClient(async function testLargeQueryAndResponse(client) {
   function buildLargeString(len: number) {
     let str = "";
     for (let i = 0; i < len; i++) {
-      str += (i % 10);
+      str += i % 10;
     }
     return str;
   }
