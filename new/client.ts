@@ -1,15 +1,11 @@
-import {
-  Connection,
-  ConnectionState,
-  ExecuteResult,
-  PreparedStatement,
-} from './connection.ts';
+import { Connection } from './collection.ts';
 import { ConnectionPool, PoolConnection } from './pool.ts';
-import { log } from './logger.ts';
 
-/**
- * Client Config
- */
+/** Transaction processor */
+export interface TransactionProcessor<T> {
+  (connection: Connection): Promise<T>;
+}
+
 export interface ClientConfig {
   /** Database hostname */
   hostname?: string;
@@ -35,19 +31,14 @@ export interface ClientConfig {
   charset?: string;
 }
 
-/** Transaction processor */
-export interface TransactionProcessor<T> {
-  (connection: Connection): Promise<T>;
-}
-
 /**
  * MySQL client
  */
 export class Client {
   config: ClientConfig = {};
-  private _pool?: ConnectionPool;
+  #pool?: ConnectionPool;
 
-  private async createConnection(): Promise<PoolConnection> {
+  async #createConnection(): Promise<PoolConnection> {
     let connection = new PoolConnection(this.config);
     await connection.connect();
     return connection;
@@ -55,7 +46,7 @@ export class Client {
 
   /** get pool info */
   get pool() {
-    return this._pool?.info;
+    return this.#pool?.info;
   }
 
   /**
@@ -74,23 +65,23 @@ export class Client {
       ...config,
     };
     Object.freeze(this.config);
-    this._pool = new ConnectionPool(
+    this.#pool = new ConnectionPool(
       this.config.poolSize || 10,
-      this.createConnection.bind(this)
+      this.#createConnection.bind(this)
     );
     return this;
   }
 
-  /**
-   * execute query sql
-   * @param sql query sql string
-   * @param params query params
-   */
-  async query(sql: string, params?: any[]): Promise<any> {
-    return await this.useConnection(async (connection) => {
-      return await connection.query(sql, params);
-    });
-  }
+  // /**
+  //  * execute query sql
+  //  * @param sql query sql string
+  //  * @param params query params
+  //  */
+  // async query(sql: string, params?: any[]): Promise<any> {
+  //   return await this.useConnection(async (connection) => {
+  //     return await connection.query(sql, params);
+  //   });
+  // }
 
   /**
    * execute sql
@@ -104,50 +95,50 @@ export class Client {
   }
 
   async useConnection<T>(fn: (conn: Connection) => Promise<T>) {
-    if (!this._pool) {
+    if (!this.#pool) {
       throw new Error('Unconnected');
     }
-    const connection = await this._pool.pop();
+    const connection = await this.#pool.pop();
     try {
       return await fn(connection);
     } finally {
-      if (connection.state == ConnectionState.CLOSED) {
-        connection.removeFromPool();
-      } else {
-        connection.returnToPool();
-      }
+      // if (connection.state == ConnectionState.CLOSED) {
+      //   connection.removeFromPool();
+      // } else {
+      connection.returnToPool();
+      // }
     }
   }
 
-  /**
-   * Execute a transaction process, and the transaction successfully
-   * returns the return value of the transaction process
-   * @param processor transation processor
-   */
-  async transaction<T = any>(processor: TransactionProcessor<T>): Promise<T> {
-    return await this.useConnection(async (connection) => {
-      try {
-        await connection.execute('BEGIN');
-        const result = await processor(connection);
-        await connection.execute('COMMIT');
-        return result;
-      } catch (error) {
-        if (connection.state == ConnectionState.CONNECTED) {
-          log.info(`ROLLBACK: ${error.message}`);
-          await connection.execute('ROLLBACK');
-        }
-        throw error;
-      }
-    });
-  }
+  // /**
+  //  * Execute a transaction process, and the transaction successfully
+  //  * returns the return value of the transaction process
+  //  * @param processor transation processor
+  //  */
+  // async transaction<T = any>(processor: TransactionProcessor<T>): Promise<T> {
+  //   return await this.useConnection(async (connection) => {
+  //     try {
+  //       await connection.execute('BEGIN');
+  //       const result = await processor(connection);
+  //       await connection.execute('COMMIT');
+  //       return result;
+  //     } catch (error) {
+  //       if (connection.state == ConnectionState.CONNECTED) {
+  //         log.info(`ROLLBACK: ${error.message}`);
+  //         await connection.execute('ROLLBACK');
+  //       }
+  //       throw error;
+  //     }
+  //   });
+  // }
 
   /**
    * close connection
    */
   async close() {
-    if (this._pool) {
-      this._pool.close();
-      this._pool = undefined;
+    if (this.#pool) {
+      this.#pool.close();
+      this.#pool = undefined;
     }
   }
 }

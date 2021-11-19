@@ -1,4 +1,5 @@
-import type { BufferReader } from "../../buffer.ts";
+import type { BufferReader } from '../../buffer.ts';
+import { ProtocolError } from '../../constant/errors.ts';
 import {
   MYSQL_TYPE_DATE,
   MYSQL_TYPE_DATETIME,
@@ -20,7 +21,9 @@ import {
   MYSQL_TYPE_TINY,
   MYSQL_TYPE_VAR_STRING,
   MYSQL_TYPE_VARCHAR,
-} from "../../constant/mysql_types.ts";
+  MYSQL_TYPE_GEOMETRY,
+  MYSQL_TYPE_YEAR,
+} from '../../constant/mysql_types.ts';
 
 /** @ignore */
 export interface FieldInfo {
@@ -77,6 +80,85 @@ export function parseRow(reader: BufferReader, fields: FieldInfo[]): any {
     const name = field.name;
     const val = reader.readLenCodeString();
     row[name] = val === null ? null : convertType(field, val);
+  }
+  return row;
+}
+
+export function parseBinaryRow(reader: BufferReader, fields: FieldInfo[]): any {
+  const row: { [key: string]: unknown } = {};
+  let nullBitmap: boolean[] = [];
+
+  const nullBitmapBuffer = reader
+    .skip(1)
+    .readBuffer(Math.floor((fields.length + 9) / 8));
+
+  for (const byte of nullBitmapBuffer) {
+    let bits = byte.toString(2);
+    if (bits.length < 8) {
+      bits = '0'.repeat(8 - bits.length) + bits;
+    }
+    nullBitmap = [
+      ...nullBitmap,
+      ...bits
+        .split('')
+        .reverse()
+        .map((bit) => bit === '1'),
+    ];
+  }
+  nullBitmap = nullBitmap.slice(2, fields.length + 2);
+
+  for (const [index, field] of fields.entries()) {
+    const isNull = nullBitmap[index];
+    let val: unknown;
+
+    if (isNull) {
+      val = null;
+    } else {
+      switch (field.fieldType) {
+        case MYSQL_TYPE_LONGLONG:
+          const _longView = new DataView(reader.readBuffer(8).buffer);
+          const long = _longView.getBigInt64(0, true);
+          if (
+            long > Number.MAX_SAFE_INTEGER ||
+            long < Number.MIN_SAFE_INTEGER
+          ) {
+            val = long;
+          } else {
+            val = Number(long);
+          }
+          break;
+        case MYSQL_TYPE_LONG:
+        case MYSQL_TYPE_INT24:
+          val = reader.readUint32();
+          break;
+        case MYSQL_TYPE_SHORT:
+        case MYSQL_TYPE_YEAR:
+          val = reader.readUint16();
+          break;
+        case MYSQL_TYPE_TINY:
+          val = reader.readUint8();
+          break;
+        case MYSQL_TYPE_DOUBLE:
+          val = new DataView(reader.readBuffer(8).buffer).getFloat64(0, true);
+          break;
+        case MYSQL_TYPE_FLOAT:
+          val = new DataView(reader.readBuffer(4).buffer).getFloat32(0, true);
+          break;
+        case MYSQL_TYPE_NEWDECIMAL:
+        case MYSQL_TYPE_VAR_STRING:
+        case MYSQL_TYPE_VARCHAR:
+        case MYSQL_TYPE_STRING:
+        case MYSQL_TYPE_GEOMETRY:
+          val = reader.readLenCodeString();
+          break;
+        default:
+          throw new ProtocolError(
+            `Currently unsupported field type: ${JSON.stringify(field)},`
+          );
+      }
+    }
+
+    row[field.name] = val;
   }
   return row;
 }

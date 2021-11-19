@@ -1,18 +1,18 @@
-import { assertEquals, assertThrowsAsync, semver } from "./test.deps.ts";
+import { assertEquals, assertThrowsAsync, semver } from './test.deps.ts';
 import {
   ConnnectionError,
   ResponseTimeoutError,
-} from "./src/constant/errors.ts";
+} from './src/constant/errors.ts';
 import {
   createTestDB,
   delay,
   isMariaDB,
   registerTests,
   testWithClient,
-} from "./test.util.ts";
-import { log as stdlog } from "./deps.ts";
-import { log } from "./src/logger.ts";
-import { configLogger } from "./mod.ts";
+} from './test.util.ts';
+import { log as stdlog } from './deps.ts';
+import { log } from './src/logger.ts';
+import { configLogger } from './mod.ts';
 
 testWithClient(async function testCreateDb(client) {
   await client.query(`CREATE DATABASE IF NOT EXISTS enok`);
@@ -33,12 +33,12 @@ testWithClient(async function testCreateTable(client) {
 
 testWithClient(async function testInsert(client) {
   let result = await client.execute(`INSERT INTO users(name) values(?)`, [
-    "manyuanrong",
+    'manyuanrong',
   ]);
   assertEquals(result, { affectedRows: 1, lastInsertId: 1 });
-  result = await client.execute(`INSERT INTO users ?? values ?`, [
-    ["id", "name"],
-    [2, "MySQL"],
+  result = await client.execute(`INSERT INTO users ? values ?`, [
+    ['id', 'name'],
+    [2, 'MySQL'],
   ]);
   assertEquals(result, { affectedRows: 1, lastInsertId: 2 });
 });
@@ -46,17 +46,17 @@ testWithClient(async function testInsert(client) {
 testWithClient(async function testUpdate(client) {
   let result = await client.execute(
     `update users set ?? = ?, ?? = ? WHERE id = ?`,
-    ["name", "MYR🦕", "created_at", new Date(), 1],
+    ['name', 'MYR🦕', 'created_at', new Date(), 1]
   );
   assertEquals(result, { affectedRows: 1, lastInsertId: 0 });
 });
 
 testWithClient(async function testQuery(client) {
   let result = await client.query(
-    "select ??,`is_top`,`name` from ?? where id = ?",
-    ["id", "users", 1],
+    'select ??,`is_top`,`name` from ?? where id = ?',
+    ['id', 'users', 1]
   );
-  assertEquals(result, [{ id: 1, name: "MYR🦕", is_top: 0 }]);
+  assertEquals(result, [{ id: 1, name: 'MYR🦕', is_top: 0 }]);
 });
 
 testWithClient(async function testQueryErrorOccurred(client) {
@@ -66,10 +66,10 @@ testWithClient(async function testQueryErrorOccurred(client) {
     available: 0,
   });
   await assertThrowsAsync(
-    () => client.query("select unknownfield from `users`"),
-    Error,
+    () => client.query('select unknownfield from `users`'),
+    Error
   );
-  await client.query("select 1");
+  await client.query('select 1');
   assertEquals(client.pool, {
     size: 1,
     maxSize: client.config.poolSize,
@@ -78,18 +78,18 @@ testWithClient(async function testQueryErrorOccurred(client) {
 });
 
 testWithClient(async function testQueryList(client) {
-  const sql = "select ??,?? from ??";
-  let result = await client.query(sql, ["id", "name", "users"]);
+  const sql = 'select ??,?? from ??';
+  let result = await client.query(sql, ['id', 'name', 'users']);
   assertEquals(result, [
-    { id: 1, name: "MYR🦕" },
-    { id: 2, name: "MySQL" },
+    { id: 1, name: 'MYR🦕' },
+    { id: 2, name: 'MySQL' },
   ]);
 });
 
 testWithClient(async function testQueryTime(client) {
   const sql = `SELECT CAST("09:04:10" AS time) as time`;
   let result = await client.query(sql);
-  assertEquals(result, [{ time: "09:04:10" }]);
+  assertEquals(result, [{ time: '09:04:10' }]);
 });
 
 testWithClient(async function testQueryBigint(client) {
@@ -100,13 +100,12 @@ testWithClient(async function testQueryBigint(client) {
     PRIMARY KEY (id)
   ) ENGINE=MEMORY DEFAULT CHARSET=utf8mb4`);
 
-  const value = "9223372036854775807";
-  await client.execute(
-    "INSERT INTO test_bigint(bigint_column) VALUES (?)",
-    [value],
-  );
+  const value = '9223372036854775807';
+  await client.execute('INSERT INTO test_bigint(bigint_column) VALUES (?)', [
+    value,
+  ]);
 
-  const result = await client.query("SELECT bigint_column FROM test_bigint");
+  const result = await client.query('SELECT bigint_column FROM test_bigint');
   assertEquals(result, [{ bigint_column: BigInt(value) }]);
 });
 
@@ -118,19 +117,18 @@ testWithClient(async function testQueryDecimal(client) {
     PRIMARY KEY (id)
   ) ENGINE=MEMORY DEFAULT CHARSET=utf8mb4`);
 
-  const value = "0.012345678901234567890123456789";
-  await client.execute(
-    "INSERT INTO test_decimal(decimal_column) VALUES (?)",
-    [value],
-  );
+  const value = '0.012345678901234567890123456789';
+  await client.execute('INSERT INTO test_decimal(decimal_column) VALUES (?)', [
+    value,
+  ]);
 
-  const result = await client.query("SELECT decimal_column FROM test_decimal");
+  const result = await client.query('SELECT decimal_column FROM test_decimal');
   assertEquals(result, [{ decimal_column: value }]);
 });
 
 testWithClient(async function testQueryDatetime(client) {
   await client.useConnection(async (connection) => {
-    if (isMariaDB(connection) || semver.lt(connection.serverVersion, "5.6.0")) {
+    if (isMariaDB(connection) || semver.lt(connection.serverVersion, '5.6.0')) {
       return;
     }
 
@@ -145,17 +143,17 @@ testWithClient(async function testQueryDatetime(client) {
       `
       INSERT INTO test_datetime (datetime)
       VALUES (?)`,
-      [datetime],
+      [datetime]
     );
 
-    const [row] = await client.query("SELECT datetime FROM test_datetime");
+    const [row] = await client.query('SELECT datetime FROM test_datetime');
     assertEquals(row.datetime.toISOString(), datetime.toISOString()); // See https://github.com/denoland/deno/issues/6643
   });
 });
 
 testWithClient(async function testDelete(client) {
   let result = await client.execute(`delete from users where ?? = ?`, [
-    "id",
+    'id',
     1,
   ]);
   assertEquals(result, { affectedRows: 1, lastInsertId: 0 });
@@ -167,7 +165,7 @@ testWithClient(async function testPool(client) {
     available: 0,
     size: 0,
   });
-  const expect = new Array(10).fill([{ "1": 1 }]);
+  const expect = new Array(10).fill([{ '1': 1 }]);
   const result = await Promise.all(expect.map(() => client.query(`select 1`)));
 
   assertEquals(client.pool, {
@@ -183,25 +181,25 @@ testWithClient(async function testQueryOnClosed(client) {
     await assertThrowsAsync(async () => {
       await client.transaction(async (conn) => {
         conn.close();
-        await conn.query("SELECT 1");
+        await conn.query('SELECT 1');
       });
     }, ConnnectionError);
   }
   assertEquals(client.pool?.size, 0);
-  await client.query("select 1");
+  await client.query('select 1');
 });
 
 testWithClient(async function testTransactionSuccess(client) {
   const success = await client.transaction(async (connection) => {
-    await connection.execute("insert into users(name) values(?)", [
-      "transaction1",
+    await connection.execute('insert into users(name) values(?)', [
+      'transaction1',
     ]);
-    await connection.execute("delete from users where id = ?", [2]);
+    await connection.execute('delete from users where id = ?', [2]);
     return true;
   });
   assertEquals(true, success);
-  const result = await client.query("select name,id from users");
-  assertEquals([{ name: "transaction1", id: 3 }], result);
+  const result = await client.query('select name,id from users');
+  assertEquals([{ name: 'transaction1', id: 3 }], result);
 });
 
 testWithClient(async function testTransactionRollback(client) {
@@ -209,82 +207,89 @@ testWithClient(async function testTransactionRollback(client) {
   await assertThrowsAsync(async () => {
     success = await client.transaction(async (connection) => {
       // Insert an existing id
-      await connection.execute("insert into users(name,id) values(?,?)", [
-        "transaction2",
+      await connection.execute('insert into users(name,id) values(?,?)', [
+        'transaction2',
         3,
       ]);
       return true;
     });
   });
   assertEquals(undefined, success);
-  const result = await client.query("select name from users");
-  assertEquals([{ name: "transaction1" }], result);
+  const result = await client.query('select name from users');
+  assertEquals([{ name: 'transaction1' }], result);
 });
 
-testWithClient(async function testIdleTimeout(client) {
-  assertEquals(client.pool, {
-    maxSize: 3,
-    available: 0,
-    size: 0,
-  });
-  await Promise.all(new Array(10).fill(0).map(() => client.query("select 1")));
-  assertEquals(client.pool, {
-    maxSize: 3,
-    available: 3,
-    size: 3,
-  });
-  await delay(500);
-  assertEquals(client.pool, {
-    maxSize: 3,
-    available: 3,
-    size: 3,
-  });
-  await client.query("select 1");
-  await delay(500);
-  assertEquals(client.pool, {
-    maxSize: 3,
-    available: 1,
-    size: 1,
-  });
-  await delay(500);
-  assertEquals(client.pool, {
-    maxSize: 3,
-    available: 0,
-    size: 0,
-  });
-}, {
-  idleTimeout: 750,
-});
+testWithClient(
+  async function testIdleTimeout(client) {
+    assertEquals(client.pool, {
+      maxSize: 3,
+      available: 0,
+      size: 0,
+    });
+    await Promise.all(
+      new Array(10).fill(0).map(() => client.query('select 1'))
+    );
+    assertEquals(client.pool, {
+      maxSize: 3,
+      available: 3,
+      size: 3,
+    });
+    await delay(500);
+    assertEquals(client.pool, {
+      maxSize: 3,
+      available: 3,
+      size: 3,
+    });
+    await client.query('select 1');
+    await delay(500);
+    assertEquals(client.pool, {
+      maxSize: 3,
+      available: 1,
+      size: 1,
+    });
+    await delay(500);
+    assertEquals(client.pool, {
+      maxSize: 3,
+      available: 0,
+      size: 0,
+    });
+  },
+  {
+    idleTimeout: 750,
+  }
+);
 
-testWithClient(async function testReadTimeout(client) {
-  await client.execute("select sleep(0.3)");
+testWithClient(
+  async function testReadTimeout(client) {
+    await client.execute('select sleep(0.3)');
 
-  await assertThrowsAsync(async () => {
-    await client.execute("select sleep(0.7)");
-  }, ResponseTimeoutError);
+    await assertThrowsAsync(async () => {
+      await client.execute('select sleep(0.7)');
+    }, ResponseTimeoutError);
 
-  assertEquals(client.pool, {
-    maxSize: 3,
-    available: 0,
-    size: 0,
-  });
-}, {
-  timeout: 500,
-});
+    assertEquals(client.pool, {
+      maxSize: 3,
+      available: 0,
+      size: 0,
+    });
+  },
+  {
+    timeout: 500,
+  }
+);
 
 testWithClient(async function testLargeQueryAndResponse(client) {
   function buildLargeString(len: number) {
-    let str = "";
+    let str = '';
     for (let i = 0; i < len; i++) {
-      str += (i % 10);
+      str += i % 10;
     }
     return str;
   }
   const largeString = buildLargeString(512 * 1024);
-  assertEquals(
-    await client.query(`select "${largeString}" as str`),
-    [{ str: largeString }],
-  );
+  assertEquals(await client.query(`select "${largeString}" as str`), [
+    { str: largeString },
+  ]);
 });
 
 testWithClient(async function testExecuteIterator(client) {
@@ -292,9 +297,10 @@ testWithClient(async function testExecuteIterator(client) {
     await conn.execute(`DROP TABLE IF EXISTS numbers`);
     await conn.execute(`CREATE TABLE numbers (num INT NOT NULL)`);
     await conn.execute(
-      `INSERT INTO numbers (num) VALUES ${
-        new Array(64).fill(0).map((v, idx) => `(${idx})`).join(",")
-      }`,
+      `INSERT INTO numbers (num) VALUES ${new Array(64)
+        .fill(0)
+        .map((v, idx) => `(${idx})`)
+        .join(',')}`
     );
     const r = await conn.execute(`SELECT num FROM numbers`, [], true);
     let count = 0;
@@ -308,16 +314,16 @@ testWithClient(async function testExecuteIterator(client) {
 
 registerTests();
 
-Deno.test("configLogger()", async () => {
+Deno.test('configLogger()', async () => {
   let logCount = 0;
-  const fakeHandler = new class extends stdlog.handlers.BaseHandler {
+  const fakeHandler = new (class extends stdlog.handlers.BaseHandler {
     constructor() {
-      super("INFO");
+      super('INFO');
     }
     log(msg: string) {
       logCount++;
     }
-  }();
+  })();
 
   await stdlog.setup({
     handlers: {
@@ -325,16 +331,16 @@ Deno.test("configLogger()", async () => {
     },
     loggers: {
       mysql: {
-        handlers: ["fake"],
+        handlers: ['fake'],
       },
     },
   });
-  await configLogger({ logger: stdlog.getLogger("mysql") });
-  log.info("Test log");
+  await configLogger({ logger: stdlog.getLogger('mysql') });
+  log.info('Test log');
   assertEquals(logCount, 1);
 
   await configLogger({ enable: false });
-  log.info("Test log");
+  log.info('Test log');
   assertEquals(logCount, 1);
 });
 
