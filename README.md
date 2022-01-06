@@ -122,7 +122,7 @@ await client.useConnection(async (conn) => {
   const { iterator: users } = await conn.execute(
     `select * from users`,
     /* params: */ [],
-    /* iterator: */ false,
+    /* iterator: */ true,
   );
   for await (const user of users) {
     console.log(user);
