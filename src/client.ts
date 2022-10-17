@@ -81,7 +81,7 @@ export class Client {
    * @param sql query sql string
    * @param params query params
    */
-  async query(sql: string, params?: any[]): Promise<any> {
+  async query<T>(sql: string, params?: any[]): Promise<[] | T[] | ExecuteResult> {
     return await this.useConnection(async (connection) => {
       return await connection.query(sql, params);
     });

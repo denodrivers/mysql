@@ -235,7 +235,7 @@ export class Connection {
    * @param sql query sql string
    * @param params query params
    */
-  async query(sql: string, params?: any[]): Promise<ExecuteResult | any[]> {
+  async query<T>(sql: string, params?: any[]): Promise<ExecuteResult | T[] | []> {
     const result = await this.execute(sql, params);
     if (result && result.rows) {
       return result.rows;
