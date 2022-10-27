@@ -1,7 +1,22 @@
-import { RSA } from "https://deno.land/x/god_crypto@v0.2.0/mod.ts";
-function encryptWithPublicKey(key: string, data: Uint8Array): Uint8Array {
-  const publicKey = RSA.parseKey(key);
-  return RSA.encrypt(data, publicKey);
+async function encryptWithPublicKey(
+  key: string,
+  data: Uint8Array,
+): Promise<ArrayBuffer> {
+  const importedKey = await crypto.subtle.importKey(
+    "raw",
+    new TextEncoder().encode(key),
+    { name: "RSA-OAEP", hash: "SHA-256" },
+    false,
+    ["encrypt"],
+  );
+
+  return await crypto.subtle.encrypt(
+    {
+      name: "RSA-OAEP",
+    },
+    importedKey,
+    data,
+  );
 }
 
 export { encryptWithPublicKey };

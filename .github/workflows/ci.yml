@@ -9,7 +9,7 @@ jobs:
     steps:
       - uses: actions/checkout@v1
       - name: Install Deno 1.x
-        uses: denolib/setup-deno@master
+        uses: denoland/setup-deno@v1
         with:
           deno-version: v1.x
       - name: Check fmt
@@ -37,7 +37,7 @@ jobs:
     steps:
       - uses: actions/checkout@v1
       - name: Install Deno ${{ matrix.DENO_VERSION }}
-        uses: denolib/setup-deno@master
+        uses: denoland/setup-deno@v1
         with:
           deno-version: ${{ matrix.DENO_VERSION }}
       - name: Show Deno version
