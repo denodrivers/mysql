@@ -106,7 +106,7 @@ export class Connection {
 
       let result;
       if (handler) {
-        result = handler.start(handshakePacket.seed, password!);
+        result = await handler.start(handshakePacket.seed, password!);
         while (!result.done) {
           if (result.data) {
             const sequenceNumber = receive.header.no + 1;

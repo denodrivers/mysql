@@ -10,12 +10,17 @@ interface handler {
 }
 
 let scramble: Uint8Array, password: string;
-function start(scramble_: Uint8Array, password_: string): handler {
+
+async function start(
+  scramble_: Uint8Array,
+  password_: string,
+): Promise<handler> {
   scramble = scramble_;
   password = password_;
-  return { done: false, next: authMoreResponse };
+  return { done: false, next: await authMoreResponse };
 }
-function authMoreResponse(packet: ReceivePacket): handler {
+
+async function authMoreResponse(packet: ReceivePacket): Promise<handler> {
   const enum AuthStatusFlags {
     FullAuth = 0x04,
     FastPath = 0x03,
@@ -26,7 +31,7 @@ function authMoreResponse(packet: ReceivePacket): handler {
   if (statusFlag === AuthStatusFlags.FullAuth) {
     authMoreData = new Uint8Array([REQUEST_PUBLIC_KEY]);
     done = false;
-    next = encryptWithKey;
+    next = await encryptWithKey;
   }
   if (statusFlag === AuthStatusFlags.FastPath) {
     done = false;
@@ -36,30 +41,34 @@ function authMoreResponse(packet: ReceivePacket): handler {
   return { done, next, quickRead, data: authMoreData };
 }
 
-function encryptWithKey(packet: ReceivePacket): handler {
+async function encryptWithKey(packet: ReceivePacket): Promise<handler> {
   const publicKey = parsePublicKey(packet);
   const len = password.length;
-  let passwordBuffer: Uint8Array = new Uint8Array(len + 1);
+  const passwordBuffer: Uint8Array = new Uint8Array(len + 1);
   for (let n = 0; n < len; n++) {
     passwordBuffer[n] = password.charCodeAt(n);
   }
   passwordBuffer[len] = 0x00;
 
-  const encryptedPassword = encrypt(passwordBuffer, scramble, publicKey);
-  return { done: false, next: terminate, data: encryptedPassword };
+  const encryptedPassword = await encrypt(passwordBuffer, scramble, publicKey);
+  return {
+    done: false,
+    next: terminate,
+    data: new Uint8Array(encryptedPassword),
+  };
 }
 
 function parsePublicKey(packet: ReceivePacket): string {
   return packet.body.skip(1).readNullTerminatedString();
 }
-function encrypt(
+
+async function encrypt(
   password: Uint8Array,
   scramble: Uint8Array,
   key: string,
-): Uint8Array {
+): Promise<ArrayBuffer> {
   const stage1 = xor(password, scramble);
-  const encrypted = encryptWithPublicKey(key, stage1);
-  return encrypted;
+  return await encryptWithPublicKey(key, stage1);
 }
 
 function terminate() {
