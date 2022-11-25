@@ -49,7 +49,7 @@ jobs:
           docker container run --rm -d -p 3306:3306 \
             -v /var/run/mysqld:/var/run/mysqld \
             -v /var/run/mysqld/tmp:/tmp \
-            -e MYSQL_ALLOW_EMPTY_PASSWORD=true \
+            -e MYSQL_ROOT_PASSWORD=root \
             ${{ matrix.DB_VERSION }}
           ./.github/workflows/wait-for-mysql.sh
       - name: Run tests (TCP)

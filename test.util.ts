@@ -5,7 +5,7 @@ const { DB_PORT, DB_NAME, DB_PASSWORD, DB_USER, DB_HOST, DB_SOCKPATH } = Deno
   .env.toObject();
 const port = DB_PORT ? parseInt(DB_PORT) : 3306;
 const db = DB_NAME || "test";
-const password = DB_PASSWORD;
+const password = DB_PASSWORD || "root";
 const username = DB_USER || "root";
 const hostname = DB_HOST || "127.0.0.1";
 const sockPath = DB_SOCKPATH || "/var/run/mysqld/mysqld.sock";
