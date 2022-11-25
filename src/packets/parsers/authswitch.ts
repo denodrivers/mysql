@@ -1,4 +1,4 @@
-import {BufferReader} from "../../buffer.ts";
+import { BufferReader } from "../../buffer.ts";
 
 /** @ignore */
 export interface authSwitchBody {
@@ -16,6 +16,6 @@ export function parseAuthSwitch(reader: BufferReader): authSwitchBody {
   return {
     status,
     authPluginName,
-    authPluginData
+    authPluginData,
   };
 }
