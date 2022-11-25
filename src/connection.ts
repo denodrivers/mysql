@@ -20,6 +20,7 @@ import { PacketType } from "./constant/packet.ts";
 import authPlugin from "./auth_plugin/index.ts";
 import { parseAuthSwitch } from "./packets/parsers/authswitch.ts";
 import auth from "./auth.ts";
+import ServerCapabilities from "./constant/capabilities.ts";
 
 /**
  * Connection state
@@ -223,34 +224,6 @@ export class Connection {
     this.close();
   };
 
-  /**
-   * Check if database server version is less than 5.7.0
-   *
-   * MySQL version is "x.y.z"
-   *   eg "5.5.62"
-   *
-   * MariaDB version is "5.5.5-x.y.z-MariaDB[-build-infos]" for versions after 5 (10.0 etc)
-   *   eg "5.5.5-10.4.10-MariaDB-1:10.4.10+maria~bionic"
-   * and "x.y.z-MariaDB-[build-infos]" for 5.x versions
-   *   eg "5.5.64-MariaDB-1~trusty"
-   */
-  private lessThan5_7(): Boolean {
-    const version = this.serverVersion;
-    if (!version.includes("MariaDB")) return version < "5.7.0";
-    const segments = version.split("-");
-    // MariaDB v5.x
-    if (segments[1] === "MariaDB") return segments[0] < "5.7.0";
-    // MariaDB v10+
-    return false;
-  }
-
-  /** Check if the MariaDB version is 10.0 or 10.1 */
-  private isMariaDBAndVersion10_0Or10_1(): Boolean {
-    const version = this.serverVersion;
-    if (!version.includes("MariaDB")) return false;
-    return version.includes("5.5.5-10.1") || version.includes("5.5.5-10.0");
-  }
-
   /** Close database connection */
   close(): void {
     if (this.state != ConnectionState.CLOSED) {
@@ -316,8 +289,8 @@ export class Connection {
       }
 
       const rows = [];
-      if (this.lessThan5_7() || this.isMariaDBAndVersion10_0Or10_1()) {
-        // EOF(less than 5.7 or mariadb version is 10.0 or 10.1)
+      if (!(this.capabilities & ServerCapabilities.CLIENT_DEPRECATE_EOF)) {
+        // EOF(mysql < 5.7 or mariadb < 10.2)
         receive = await this.nextPacket();
         if (receive.type !== PacketType.EOF_Packet) {
           throw new ProtocolError();
