@@ -32,7 +32,8 @@ export default function auth(
 ) {
   switch (authPluginName) {
     case "mysql_native_password":
-      return mysqlNativePassword(password, seed);
+      // Native password authentication only need and will need 20-byte challenge.
+      return mysqlNativePassword(password, seed.slice(0, 20));
 
     case "caching_sha2_password":
       return cachingSha2Password(password, seed);

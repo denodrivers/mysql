@@ -18,6 +18,8 @@ import {
 import { FieldInfo, parseField, parseRow } from "./packets/parsers/result.ts";
 import { PacketType } from "./constant/packet.ts";
 import authPlugin from "./auth_plugin/index.ts";
+import {parseAuthSwitch} from "./packets/parsers/authswitch.ts";
+import auth from "./auth.ts";
 
 /**
  * Connection state
@@ -100,8 +102,31 @@ export class Connection {
           handler = adaptedPlugin;
           break;
         case AuthResult.MethodMismatch:
-          // TODO: Negotiate
-          throw new Error("Currently cannot support auth method mismatch!");
+          const authSwitch = parseAuthSwitch(receive.body);
+          // If CLIENT_PLUGIN_AUTH capability is not supported, no new cipher is
+          // sent and we have to keep using the cipher sent in the init packet.
+          if (authSwitch.authPluginData === undefined || authSwitch.authPluginData.length === 0) {
+            authSwitch.authPluginData = handshakePacket.seed;
+          }
+
+          let authData
+          if(password) {
+            authData = auth(
+                authSwitch.authPluginName,
+                password,
+                authSwitch.authPluginData,
+            );
+          }else{
+            authData = Uint8Array.from([])
+          }
+
+          await new SendPacket(authData,  receive.header.no + 1).send(this.conn);
+
+          receive = await this.nextPacket();
+          const authSwitch2 = parseAuthSwitch(receive.body);
+          if(authSwitch2.authPluginName !== "") {
+            throw new Error("Do not allow to change the auth plugin more than once!");
+          }
       }
 
       let result;
