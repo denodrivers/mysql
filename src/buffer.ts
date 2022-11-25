@@ -63,6 +63,10 @@ export class BufferReader {
     return decode(buf);
   }
 
+  readRestOfPacketString(): Uint8Array {
+    return this.buffer.slice(this.pos);
+  }
+
   readString(len: number): string {
     const str = decode(this.buffer.slice(this.pos, this.pos + len));
     this.pos += len;
