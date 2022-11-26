@@ -24,6 +24,12 @@ export class PoolConnection extends Connection {
           log.warning(`error closing idle connection`, error);
         }
       }, this.config.idleTimeout);
+      try {
+        // Don't block the event loop from finishing
+        Deno.unrefTimer(this._idleTimer);
+      } catch (_error) {
+        // unrefTimer() is unstable API in older version of Deno
+      }
     }
   }
 
