@@ -46,10 +46,10 @@ jobs:
         run: |
           sudo mkdir -p /var/run/mysqld/tmp
           sudo chmod -R 777 /var/run/mysqld
-          docker container run --rm -d -p 3306:3306 \
+          docker container run --name mysql --rm -d -p 3306:3306 \
             -v /var/run/mysqld:/var/run/mysqld \
             -v /var/run/mysqld/tmp:/tmp \
-            -e MYSQL_ALLOW_EMPTY_PASSWORD=true \
+            -e MYSQL_ROOT_PASSWORD=root \
             ${{ matrix.DB_VERSION }}
           ./.github/workflows/wait-for-mysql.sh
       - name: Run tests (TCP)
@@ -61,7 +61,8 @@ jobs:
           if [[ "${{ matrix.DB_VERSION }}" == "mysql:5.5" ]]; then
             SOCKPATH=/var/run/mysqld/tmp/mysql.sock
           fi
+          echo "DROP USER 'root'@'localhost';" | docker exec -i mysql mysql -proot
           DB_SOCKPATH=$SOCKPATH TEST_METHODS=unix \
-            deno test --unstable --allow-env --allow-net=127.0.0.1:3306 \
+            deno test --unstable --allow-env \
             --allow-read=/var/run/mysqld/ --allow-write=/var/run/mysqld/ \
             ./test.ts

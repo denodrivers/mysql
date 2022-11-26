@@ -5,10 +5,13 @@ const { DB_PORT, DB_NAME, DB_PASSWORD, DB_USER, DB_HOST, DB_SOCKPATH } = Deno
   .env.toObject();
 const port = DB_PORT ? parseInt(DB_PORT) : 3306;
 const db = DB_NAME || "test";
-const password = DB_PASSWORD;
+const password = DB_PASSWORD || "root";
 const username = DB_USER || "root";
 const hostname = DB_HOST || "127.0.0.1";
 const sockPath = DB_SOCKPATH || "/var/run/mysqld/mysqld.sock";
+const testMethods =
+  Deno.env.get("TEST_METHODS")?.split(",") as ("tcp" | "unix")[] || ["tcp"];
+const unixSocketOnly = testMethods.length === 1 && testMethods[0] === "unix";
 
 const config: ClientConfig = {
   timeout: 10000,
@@ -31,10 +34,7 @@ export function testWithClient(
   tests.push([fn, overrideConfig]);
 }
 
-export function registerTests(methods?: ("tcp" | "unix")[]) {
-  if (!methods) {
-    methods = Deno.env.get("TEST_METHODS")?.split(",") as any || ["tcp"];
-  }
+export function registerTests(methods: ("tcp" | "unix")[] = testMethods) {
   if (methods!.includes("tcp")) {
     tests.forEach(([fn, overrideConfig]) => {
       Deno.test({
@@ -83,6 +83,7 @@ export async function createTestDB() {
     ...config,
     poolSize: 1,
     db: undefined,
+    socketPath: unixSocketOnly ? sockPath : undefined,
   });
   await client.execute(`CREATE DATABASE IF NOT EXISTS ${db}`);
   await client.close();
