@@ -306,6 +306,37 @@ testWithClient(async function testExecuteIterator(client) {
   });
 });
 
+// For MySQL 8, the default auth plugin is `caching_sha2_password`. Create user
+// using `mysql_native_password` to test Authentication Method Mismatch.
+testWithClient(async function testCreateUserWithMysqlNativePassword(client) {
+  const { version } = (await client.query(`SELECT VERSION() as version`))[0];
+  if (version.startsWith("8.")) {
+    // MySQL 8 does not have `PASSWORD()` function
+    await client.execute(
+      `CREATE USER 'testuser'@'%' IDENTIFIED WITH mysql_native_password BY 'testpassword'`,
+    );
+  } else {
+    await client.execute(
+      `CREATE USER 'testuser'@'%' IDENTIFIED WITH mysql_native_password`,
+    );
+    await client.execute(
+      `SET PASSWORD FOR 'testuser'@'%' = PASSWORD('testpassword')`,
+    );
+  }
+  await client.execute(`GRANT ALL ON test.* TO 'testuser'@'%'`);
+});
+
+testWithClient(async function testConnectWithMysqlNativePassword(client) {
+  assertEquals(
+    await client.query(`SELECT CURRENT_USER() AS user`),
+    [{ user: "testuser@%" }],
+  );
+}, { username: "testuser", password: "testpassword" });
+
+testWithClient(async function testDropUserWithMysqlNativePassword(client) {
+  await client.execute(`DROP USER 'testuser'@'%'`);
+});
+
 registerTests();
 
 Deno.test("configLogger()", async () => {
