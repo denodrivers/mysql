@@ -300,7 +300,8 @@ export class Connection {
       if (!iterator) {
         while (true) {
           receive = await this.nextPacket();
-          if (receive.type === PacketType.EOF_Packet) {
+          // OK_Packet when CLIENT_DEPRECATE_EOF is set. OK_Packet can be 0xfe or 0x00
+          if (receive.type === PacketType.EOF_Packet || receive.type === PacketType.OK_Packet) {
             break;
           } else {
             const row = parseRow(receive.body, fields);
