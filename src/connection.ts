@@ -148,7 +148,7 @@ export class Connection {
             await this.nextPacket();
           }
           if (result.next) {
-            result = result.next(receive);
+            result = await result.next(receive);
           }
         }
       }
