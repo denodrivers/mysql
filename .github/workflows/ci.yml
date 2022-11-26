@@ -63,6 +63,6 @@ jobs:
           fi
           echo "DROP USER 'root'@'localhost';" | docker exec -i mysql mysql -proot
           DB_SOCKPATH=$SOCKPATH TEST_METHODS=unix \
-            deno test --unstable --allow-env --allow-net=127.0.0.1:3306 \
+            deno test --unstable --allow-env \
             --allow-read=/var/run/mysqld/ --allow-write=/var/run/mysqld/ \
             ./test.ts
