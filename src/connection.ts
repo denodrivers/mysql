@@ -1,4 +1,4 @@
-import { ClientConfig } from "./client.ts";
+import { ClientConfig, TLSMode } from "./client.ts";
 import {
   ConnnectionError,
   ProtocolError,
@@ -21,6 +21,7 @@ import authPlugin from "./auth_plugin/index.ts";
 import { parseAuthSwitch } from "./packets/parsers/authswitch.ts";
 import auth from "./auth.ts";
 import ServerCapabilities from "./constant/capabilities.ts";
+import { buildSSLRequest } from "./packets/builders/tls.ts";
 
 /**
  * Connection state
@@ -62,6 +63,13 @@ export class Connection {
 
   private async _connect() {
     // TODO: implement connect timeout
+    if (
+      this.config.tls?.mode &&
+      this.config.tls.mode.toLocaleLowerCase() !== TLSMode.DISABLED &&
+      this.config.tls.mode.toLocaleLowerCase() !== TLSMode.VERIFY_IDENTITY
+    ) {
+      throw new Error("unsupported tls mode");
+    }
     const { hostname, port = 3306, socketPath, username = "", password } =
       this.config;
     log.info(`connecting ${this.remoteAddr}`);
@@ -79,13 +87,46 @@ export class Connection {
     try {
       let receive = await this.nextPacket();
       const handshakePacket = parseHandshake(receive.body);
+
+      let handshakeSequenceNumber = receive.header.no;
+
+      // Deno.startTls() only supports VERIFY_IDENTITY now.
+      let isSSL = false;
+      if (
+        this.config.tls?.mode?.toLocaleLowerCase() === TLSMode.VERIFY_IDENTITY
+      ) {
+        if (
+          (handshakePacket.serverCapabilities &
+            ServerCapabilities.CLIENT_SSL) === 0
+        ) {
+          throw new Error("Server does not support TLS");
+        }
+        if (
+          (handshakePacket.serverCapabilities &
+            ServerCapabilities.CLIENT_SSL) !== 0
+        ) {
+          const tlsData = buildSSLRequest(handshakePacket, {
+            db: this.config.db,
+          });
+          await new SendPacket(tlsData, ++handshakeSequenceNumber).send(
+            this.conn,
+          );
+          this.conn = await Deno.startTls(this.conn, {
+            hostname,
+            caCerts: this.config.tls?.caCerts,
+          });
+        }
+        isSSL = true;
+      }
+
       const data = buildAuth(handshakePacket, {
         username,
         password,
         db: this.config.db,
+        ssl: isSSL,
       });
 
-      await new SendPacket(data, 0x1).send(this.conn);
+      await new SendPacket(data, ++handshakeSequenceNumber).send(this.conn);
 
       this.state = ConnectionState.CONNECTING;
       this.serverVersion = handshakePacket.serverVersion;

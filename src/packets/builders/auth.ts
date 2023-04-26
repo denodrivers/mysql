@@ -3,24 +3,17 @@ import { BufferWriter } from "../../buffer.ts";
 import ServerCapabilities from "../../constant/capabilities.ts";
 import { Charset } from "../../constant/charset.ts";
 import type { HandshakeBody } from "../parsers/handshake.ts";
+import { clientCapabilities } from "./client_capabilities.ts";
 
 /** @ignore */
 export function buildAuth(
   packet: HandshakeBody,
-  params: { username: string; password?: string; db?: string },
+  params: { username: string; password?: string; db?: string; ssl?: boolean },
 ): Uint8Array {
-  const clientParam: number =
-    (params.db ? ServerCapabilities.CLIENT_CONNECT_WITH_DB : 0) |
-    ServerCapabilities.CLIENT_PLUGIN_AUTH |
-    ServerCapabilities.CLIENT_LONG_PASSWORD |
-    ServerCapabilities.CLIENT_PROTOCOL_41 |
-    ServerCapabilities.CLIENT_TRANSACTIONS |
-    ServerCapabilities.CLIENT_MULTI_RESULTS |
-    ServerCapabilities.CLIENT_SECURE_CONNECTION |
-    (ServerCapabilities.CLIENT_LONG_FLAG & packet.serverCapabilities) |
-    (ServerCapabilities.CLIENT_PLUGIN_AUTH_LENENC_CLIENT_DATA &
-      packet.serverCapabilities) |
-    (ServerCapabilities.CLIENT_DEPRECATE_EOF & packet.serverCapabilities);
+  const clientParam: number = clientCapabilities(packet, {
+    db: params.db,
+    ssl: params.ssl,
+  });
 
   if (packet.serverCapabilities & ServerCapabilities.CLIENT_PLUGIN_AUTH) {
     const writer = new BufferWriter(new Uint8Array(1000));

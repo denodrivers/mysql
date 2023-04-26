@@ -143,6 +143,35 @@ const users = await client.transaction(async (conn) => {
 console.log(users.length);
 ```
 
+### TLS
+
+TLS configuration:
+
+- caCerts([]string): A list of root certificates (must be PEM format) that will
+  be used in addition to the default root certificates to verify the peer's
+  certificate.
+- mode(string): The TLS mode to use. Valid values are "disabled",
+  "verify_identity". Defaults to "disabled".
+
+You usually need not specify the caCert, unless the certificate is not included
+in the default root certificates.
+
+```ts
+import { Client } from "https://deno.land/x/mysql/mod.ts";
+const client = await new Client().connect({
+  hostname: "127.0.0.1",
+  username: "root",
+  db: "dbname",
+  password: "password",
+  tls: {
+    mode: "verify_identity",
+    caCerts: [
+      await Deno.readTextFile("capath"),
+    ],
+  },
+});
+```
+
 ### close
 
 ```ts

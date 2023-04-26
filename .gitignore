@@ -4,4 +4,5 @@ node_modules
 mysql.log
 docs
 .DS_Store
+.idea
 

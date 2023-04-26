@@ -29,7 +29,7 @@ export async function configLogger(config: LoggerConfig) {
 
   if (!enable) {
     logger = new log.Logger("fakeLogger", "NOTSET", {});
-    logger.level = 100;
+    logger.level = 0;
   } else {
     if (!config.logger) {
       await log.setup({

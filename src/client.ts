@@ -28,6 +28,23 @@ export interface ClientConfig {
   idleTimeout?: number;
   /** charset */
   charset?: string;
+  /** tls config */
+  tls?: TLSConfig;
+}
+
+export enum TLSMode {
+  DISABLED = "disabled",
+  VERIFY_IDENTITY = "verify_identity",
+}
+/**
+ * TLS Config
+ */
+export interface TLSConfig {
+  /** mode of tls. only support disabled and verify_identity now*/
+  mode?: string;
+  /** A list of root certificates (must be PEM format) that will be used in addition to the
+   * default root certificates to verify the peer's certificate. */
+  caCerts?: string[];
 }
 
 /** Transaction processor */
