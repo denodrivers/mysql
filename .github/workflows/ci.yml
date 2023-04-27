@@ -21,18 +21,18 @@ jobs:
         DENO_VERSION:
           - v1.x
         DB_VERSION:
-#          - mysql:5.5
-#          - mysql:5.6
-#          - mysql:5.7
+          - mysql:5.5
+          - mysql:5.6
+          - mysql:5.7
           - mysql:8
-#          - mysql:latest
-#          - mariadb:5.5
-#          - mariadb:10.0
-#          - mariadb:10.1
-#          - mariadb:10.2
-#          - mariadb:10.3
-#          - mariadb:10.4
-#          - mariadb:latest
+          - mysql:latest
+          - mariadb:5.5
+          - mariadb:10.0
+          - mariadb:10.1
+          - mariadb:10.2
+          - mariadb:10.3
+          - mariadb:10.4
+          - mariadb:latest
 
     steps:
       - uses: actions/checkout@v1
@@ -45,24 +45,16 @@ jobs:
       - name: Start ${{ matrix.DB_VERSION }}
         run: |
           sudo mkdir -p /var/run/mysqld/tmp
-          sudo mkdir -p /etc/mysql
-          sudo cp -r tls/cert /etc/cert
-          sudo cp -r tls/conf.d /etc/conf.d
-          sudo chmod -R 777 /etc/mysql
           sudo chmod -R 777 /var/run/mysqld
           docker container run --name mysql --rm -d -p 3306:3306 \
             -v /var/run/mysqld:/var/run/mysqld \
             -v /var/run/mysqld/tmp:/tmp \
-            -v /etc/cert:/etc/mysql/cert \
-            -v /etc/conf.d:/etc/mysql/conf.d \
             -e MYSQL_ROOT_PASSWORD=root \
             ${{ matrix.DB_VERSION }}
           ./.github/workflows/wait-for-mysql.sh
       - name: Run tests (TCP)
         run: |
-          mysql -uroot -h 127.0.0.1 -proot --ssl-mode=VERIFY_CA --ssl-ca=tls/cert/ca.pem -e "show variables like '%ssl%'"
-          mysql -uroot -h 127.0.0.1 -proot --ssl-mode=VERIFY_IDENTITY --ssl-ca=tls/cert/ca.pem -e "show variables like '%ssl%'"
-          deno test --allow-env --allow-net=127.0.0.1:3306,127.0.0.1:0 --allow-read=tls ./test.ts
+          deno test --allow-env --allow-net=127.0.0.1:3306 ./test.ts
       - name: Run tests (--unstable) (UNIX domain socket)
         run: |
           SOCKPATH=/var/run/mysqld/mysqld.sock

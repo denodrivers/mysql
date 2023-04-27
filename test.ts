@@ -337,17 +337,6 @@ testWithClient(async function testDropUserWithMysqlNativePassword(client) {
   await client.execute(`DROP USER 'testuser'@'%'`);
 });
 
-testWithClient(async function testTLS(client) {
-  await client.execute(`show databases`);
-}, {
-  tls: {
-    mode: "verify_identity",
-    caCerts: [
-      await Deno.readTextFile("tls/cert/ca.pem"),
-    ],
-  },
-});
-
 registerTests();
 
 Deno.test("configLogger()", async () => {
