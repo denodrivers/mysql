@@ -14,8 +14,7 @@ On this basis, there is also an ORM library:
 
 ## API
 
-
-### connect
+### connect1
 
 ```ts
 import { Client } from "https://deno.land/x/mysql/mod.ts";
