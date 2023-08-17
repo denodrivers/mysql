@@ -65,8 +65,8 @@ export class Connection {
     // TODO: implement connect timeout
     if (
       this.config.tls?.mode &&
-      this.config.tls.mode.toLocaleLowerCase() !== TLSMode.DISABLED &&
-      this.config.tls.mode.toLocaleLowerCase() !== TLSMode.VERIFY_IDENTITY
+      this.config.tls.mode !== TLSMode.DISABLED &&
+      this.config.tls.mode !== TLSMode.VERIFY_IDENTITY
     ) {
       throw new Error("unsupported tls mode");
     }
@@ -93,7 +93,7 @@ export class Connection {
       // Deno.startTls() only supports VERIFY_IDENTITY now.
       let isSSL = false;
       if (
-        this.config.tls?.mode?.toLocaleLowerCase() === TLSMode.VERIFY_IDENTITY
+        this.config.tls?.mode === TLSMode.VERIFY_IDENTITY
       ) {
         if (
           (handshakePacket.serverCapabilities &

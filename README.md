@@ -157,18 +157,19 @@ You usually need not specify the caCert, unless the certificate is not included
 in the default root certificates.
 
 ```ts
-import { Client } from "https://deno.land/x/mysql/mod.ts";
+import { Client, TLSConfig, TLSMode } from "https://deno.land/x/mysql/mod.ts";
+const tlsConfig: TLSConfig = {
+  mode: TLSMode.VERIFY_IDENTITY,
+  caCerts: [
+    await Deno.readTextFile("capath"),
+  ],
+};
 const client = await new Client().connect({
   hostname: "127.0.0.1",
   username: "root",
   db: "dbname",
   password: "password",
-  tls: {
-    mode: "verify_identity",
-    caCerts: [
-      await Deno.readTextFile("capath"),
-    ],
-  },
+  tls: tlsConfig,
 });
 ```
 

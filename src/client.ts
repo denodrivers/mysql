@@ -41,7 +41,7 @@ export enum TLSMode {
  */
 export interface TLSConfig {
   /** mode of tls. only support disabled and verify_identity now*/
-  mode?: string;
+  mode?: TLSMode;
   /** A list of root certificates (must be PEM format) that will be used in addition to the
    * default root certificates to verify the peer's certificate. */
   caCerts?: string[];

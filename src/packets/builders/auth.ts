@@ -10,10 +10,7 @@ export function buildAuth(
   packet: HandshakeBody,
   params: { username: string; password?: string; db?: string; ssl?: boolean },
 ): Uint8Array {
-  const clientParam: number = clientCapabilities(packet, {
-    db: params.db,
-    ssl: params.ssl,
-  });
+  const clientParam: number = clientCapabilities(packet, params);
 
   if (packet.serverCapabilities & ServerCapabilities.CLIENT_PLUGIN_AUTH) {
     const writer = new BufferWriter(new Uint8Array(1000));
