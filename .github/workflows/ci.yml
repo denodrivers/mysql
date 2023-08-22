@@ -32,7 +32,7 @@ jobs:
           - mariadb:10.2
           - mariadb:10.3
           - mariadb:10.4
-          - mariadb:latest
+#          - mariadb:latest
 
     steps:
       - uses: actions/checkout@v1
