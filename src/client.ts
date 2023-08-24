@@ -73,7 +73,7 @@ export class Client {
   /**
    * connect to database
    * @param config config for client
-   * @returns Clinet instance
+   * @returns Client instance
    */
   async connect(config: ClientConfig): Promise<Client> {
     this.config = {
