@@ -337,6 +337,21 @@ testWithClient(async function testDropUserWithMysqlNativePassword(client) {
   await client.execute(`DROP USER 'testuser'@'%'`);
 });
 
+testWithClient(async function testSelectEmptyString(client) {
+  assertEquals(
+    await client.query(`SELECT '' AS a`),
+    [{ a: "" }],
+  );
+  assertEquals(
+    await client.query(`SELECT '' AS a, '' AS b, '' AS c`),
+    [{ a: "", b: "", c: "" }],
+  );
+  assertEquals(
+    await client.query(`SELECT '' AS a, 'b' AS b, '' AS c`),
+    [{ a: "", b: "b", c: "" }],
+  );
+});
+
 registerTests();
 
 Deno.test("configLogger()", async () => {
