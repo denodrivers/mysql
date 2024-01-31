@@ -24,7 +24,9 @@ export class SendPacket {
     data.writeUints(3, this.header.size);
     data.write(this.header.no);
     data.writeBuffer(body);
-    log.debug(`send: ${data.length}B \n${byteFormat(data.buffer)}\n`);
+    debug(() => {
+      log.debug(`send: ${data.length}B \n${byteFormat(data.buffer)}\n`);
+    });
     try {
       let wrote = 0;
       do {
