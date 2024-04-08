@@ -1,0 +1,13 @@
+services:
+  mysql:
+    image: mysql
+    restart: always
+    ports:
+      - 3306:3306
+    environment:
+      MYSQL_ALLOW_EMPTY_PASSWORD: true
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "--user", "root"]
+      interval: 3s
+      timeout: 3s
+      retries: 10
