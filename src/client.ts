@@ -1,4 +1,8 @@
-import { Connection, ConnectionState, ExecuteResult } from "./connection.ts";
+import {
+  type Connection,
+  ConnectionState,
+  type ExecuteResult,
+} from "./connection.ts";
 import { ConnectionPool, PoolConnection } from "./pool.ts";
 import { log } from "./logger.ts";
 

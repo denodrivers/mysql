@@ -1,8 +1,6 @@
-import { Deferred, deferred } from "../deps.ts";
-
 /** @ignore */
 export class DeferredStack<T> {
-  private _queue: Deferred<T>[] = [];
+  private _queue: PromiseWithResolvers<T>[] = [];
   private _size = 0;
 
   constructor(
@@ -39,9 +37,9 @@ export class DeferredStack<T> {
       }
       return item;
     }
-    const defer = deferred<T>();
+    const defer = Promise.withResolvers<T>();
     this._queue.push(defer);
-    return await defer;
+    return await defer.promise;
   }
 
   /** Returns false if the item is consumed by a deferred pop */

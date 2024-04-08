@@ -1,6 +1,6 @@
-import { ClientConfig, TLSMode } from "./client.ts";
+import { type ClientConfig, TLSMode } from "./client.ts";
 import {
-  ConnnectionError,
+  ConnectionError,
   ProtocolError,
   ReadError,
   ResponseTimeoutError,
@@ -15,7 +15,11 @@ import {
   parseAuth,
   parseHandshake,
 } from "./packets/parsers/handshake.ts";
-import { FieldInfo, parseField, parseRow } from "./packets/parsers/result.ts";
+import {
+  type FieldInfo,
+  parseField,
+  parseRow,
+} from "./packets/parsers/result.ts";
 import { PacketType } from "./constant/packet.ts";
 import authPlugin from "./auth_plugin/index.ts";
 import { parseAuthSwitch } from "./packets/parsers/authswitch.ts";
@@ -138,12 +142,13 @@ export class Connection {
       let handler;
 
       switch (authResult) {
-        case AuthResult.AuthMoreRequired:
+        case AuthResult.AuthMoreRequired: {
           const adaptedPlugin =
             (authPlugin as any)[handshakePacket.authPluginName];
           handler = adaptedPlugin;
           break;
-        case AuthResult.MethodMismatch:
+        }
+        case AuthResult.MethodMismatch: {
           const authSwitch = parseAuthSwitch(receive.body);
           // If CLIENT_PLUGIN_AUTH capability is not supported, no new cipher is
           // sent and we have to keep using the cipher sent in the init packet.
@@ -156,7 +161,7 @@ export class Connection {
 
           let authData;
           if (password) {
-            authData = auth(
+            authData = await auth(
               authSwitch.authPluginName,
               password,
               authSwitch.authPluginData,
@@ -174,6 +179,7 @@ export class Connection {
               "Do not allow to change the auth plugin more than once!",
             );
           }
+        }
       }
 
       let result;
@@ -222,7 +228,7 @@ export class Connection {
 
   private async nextPacket(): Promise<ReceivePacket> {
     if (!this.conn) {
-      throw new ConnnectionError("Not connected");
+      throw new ConnectionError("Not connected");
     }
 
     const timeoutTimer = this.config.timeout
@@ -301,9 +307,9 @@ export class Connection {
   ): Promise<ExecuteResult> {
     if (this.state != ConnectionState.CONNECTED) {
       if (this.state == ConnectionState.CLOSED) {
-        throw new ConnnectionError("Connection is closed");
+        throw new ConnectionError("Connection is closed");
       } else {
-        throw new ConnnectionError("Must be connected first");
+        throw new ConnectionError("Must be connected first");
       }
     }
     const data = buildQuery(sql, params);

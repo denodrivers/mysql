@@ -1,6 +1,7 @@
-import { assertEquals, assertThrowsAsync, semver } from "./test.deps.ts";
+import { assertEquals, assertRejects } from "@std/assert";
+import { lessThan, parse } from "@std/semver";
 import {
-  ConnnectionError,
+  ConnectionError,
   ResponseTimeoutError,
 } from "./src/constant/errors.ts";
 import {
@@ -10,7 +11,7 @@ import {
   registerTests,
   testWithClient,
 } from "./test.util.ts";
-import { log as stdlog } from "./deps.ts";
+import * as stdlog from "@std/log";
 import { log } from "./src/logger.ts";
 import { configLogger } from "./mod.ts";
 
@@ -65,7 +66,7 @@ testWithClient(async function testQueryErrorOccurred(client) {
     maxSize: client.config.poolSize,
     available: 0,
   });
-  await assertThrowsAsync(
+  await assertRejects(
     () => client.query("select unknownfield from `users`"),
     Error,
   );
@@ -130,7 +131,10 @@ testWithClient(async function testQueryDecimal(client) {
 
 testWithClient(async function testQueryDatetime(client) {
   await client.useConnection(async (connection) => {
-    if (isMariaDB(connection) || semver.lt(connection.serverVersion, "5.6.0")) {
+    if (
+      isMariaDB(connection) ||
+      lessThan(parse(connection.serverVersion), parse("5.6.0"))
+    ) {
       return;
     }
 
@@ -180,12 +184,12 @@ testWithClient(async function testPool(client) {
 
 testWithClient(async function testQueryOnClosed(client) {
   for (const i of [0, 0, 0]) {
-    await assertThrowsAsync(async () => {
+    await assertRejects(async () => {
       await client.transaction(async (conn) => {
         conn.close();
         await conn.query("SELECT 1");
       });
-    }, ConnnectionError);
+    }, ConnectionError);
   }
   assertEquals(client.pool?.size, 0);
   await client.query("select 1");
@@ -206,7 +210,7 @@ testWithClient(async function testTransactionSuccess(client) {
 
 testWithClient(async function testTransactionRollback(client) {
   let success;
-  await assertThrowsAsync(async () => {
+  await assertRejects(async () => {
     success = await client.transaction(async (connection) => {
       // Insert an existing id
       await connection.execute("insert into users(name,id) values(?,?)", [
@@ -259,7 +263,7 @@ testWithClient(async function testIdleTimeout(client) {
 testWithClient(async function testReadTimeout(client) {
   await client.execute("select sleep(0.3)");
 
-  await assertThrowsAsync(async () => {
+  await assertRejects(async () => {
     await client.execute("select sleep(0.7)");
   }, ResponseTimeoutError);
 
@@ -356,7 +360,7 @@ registerTests();
 
 Deno.test("configLogger()", async () => {
   let logCount = 0;
-  const fakeHandler = new class extends stdlog.handlers.BaseHandler {
+  const fakeHandler = new class extends stdlog.BaseHandler {
     constructor() {
       super("INFO");
     }

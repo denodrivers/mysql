@@ -1,5 +1,5 @@
 import { xor } from "../util.ts";
-import { ReceivePacket } from "../packets/packet.ts";
+import type { ReceivePacket } from "../packets/packet.ts";
 import { encryptWithPublicKey } from "./crypt.ts";
 
 interface handler {

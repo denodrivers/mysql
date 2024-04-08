@@ -1,5 +1,5 @@
-import { Client, ClientConfig, Connection } from "./mod.ts";
-import { assertEquals, parse } from "./test.deps.ts";
+import { Client, type ClientConfig, type Connection } from "./mod.ts";
+import { assertEquals } from "@std/assert";
 
 const { DB_PORT, DB_NAME, DB_PASSWORD, DB_USER, DB_HOST, DB_SOCKPATH } = Deno
   .env.toObject();

@@ -1,4 +1,4 @@
-import { byteFormat } from "../../deps.ts";
+import { format as byteFormat } from "bytes_formater/mod.ts";
 import { BufferReader, BufferWriter } from "../buffer.ts";
 import { WriteError } from "../constant/errors.ts";
 import { debug, log } from "../logger.ts";

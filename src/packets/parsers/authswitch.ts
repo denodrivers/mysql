@@ -1,4 +1,4 @@
-import { BufferReader } from "../../buffer.ts";
+import type { BufferReader } from "../../buffer.ts";
 
 /** @ignore */
 export interface authSwitchBody {

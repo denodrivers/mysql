@@ -21,7 +21,7 @@ export class PoolConnection extends Connection {
         try {
           this.close();
         } catch (error) {
-          log.warning(`error closing idle connection`, error);
+          log.warn(`error closing idle connection`, error);
         }
       }, this.config.idleTimeout);
       try {

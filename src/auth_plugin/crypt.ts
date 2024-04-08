@@ -1,4 +1,4 @@
-import { base64Decode } from "../../deps.ts";
+import { decodeBase64 } from "@std/encoding/base64";
 
 async function encryptWithPublicKey(
   key: string,
@@ -10,7 +10,7 @@ async function encryptWithPublicKey(
   key = key.substring(pemHeader.length, key.length - pemFooter.length);
   const importedKey = await crypto.subtle.importKey(
     "spki",
-    base64Decode(key),
+    decodeBase64(key),
     { name: "RSA-OAEP", hash: "SHA-256" },
     false,
     ["encrypt"],
