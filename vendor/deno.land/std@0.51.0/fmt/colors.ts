@@ -184,8 +184,8 @@ export function rgb24(str: string, color: Rgb): string {
         clampAndTruncate(color.g),
         clampAndTruncate(color.b),
       ],
-      39
-    )
+      39,
+    ),
   );
 }
 
@@ -201,7 +201,7 @@ export function bgRgb24(str: string, color: Rgb): string {
         clampAndTruncate(color.g),
         clampAndTruncate(color.b),
       ],
-      49
-    )
+      49,
+    ),
   );
 }

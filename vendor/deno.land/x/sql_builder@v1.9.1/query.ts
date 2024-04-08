@@ -1,7 +1,7 @@
 import { assert, replaceParams } from "./deps.ts";
-import { Order } from "./order.ts";
-import { Where } from "./where.ts";
-import { Join } from "./join.ts";
+import type { Order } from "./order.ts";
+import type { Where } from "./where.ts";
+import type { Join } from "./join.ts";
 
 export class Query {
   private _type?: "select" | "insert" | "update" | "delete";
