@@ -1,4 +1,4 @@
-import { replaceParams } from "sql_builder/util.ts";
+import { replaceParams } from "../../util.ts";
 import { BufferWriter, encode } from "../../buffer.ts";
 
 /** @ignore */
