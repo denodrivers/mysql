@@ -1,7 +1,7 @@
 import { type BufferReader, BufferWriter } from "../../buffer.ts";
 import ServerCapabilities from "../../constant/capabilities.ts";
 import { PacketType } from "../../constant/packet.ts";
-import type { ReceivePacket } from "../packet.ts";
+import type { PacketReader } from "../packet.ts";
 
 /** @ignore */
 export interface HandshakeBody {
@@ -73,7 +73,7 @@ export enum AuthResult {
   MethodMismatch,
   AuthMoreRequired,
 }
-export function parseAuth(packet: ReceivePacket): AuthResult {
+export function parseAuth(packet: PacketReader): AuthResult {
   switch (packet.type) {
     case PacketType.EOF_Packet:
       return AuthResult.MethodMismatch;

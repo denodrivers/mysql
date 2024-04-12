@@ -1,11 +1,11 @@
 import { xor } from "../util.ts";
-import type { ReceivePacket } from "../packets/packet.ts";
+import type { PacketReader } from "../packets/packet.ts";
 import { encryptWithPublicKey } from "./crypt.ts";
 
 interface handler {
   done: boolean;
   quickRead?: boolean;
-  next?: (packet: ReceivePacket) => any;
+  next?: (packet: PacketReader) => any;
   data?: Uint8Array;
 }
 
@@ -20,7 +20,7 @@ async function start(
   return { done: false, next: authMoreResponse };
 }
 
-async function authMoreResponse(packet: ReceivePacket): Promise<handler> {
+async function authMoreResponse(packet: PacketReader): Promise<handler> {
   const enum AuthStatusFlags {
     FullAuth = 0x04,
     FastPath = 0x03,
@@ -41,7 +41,7 @@ async function authMoreResponse(packet: ReceivePacket): Promise<handler> {
   return { done, next, quickRead, data: authMoreData };
 }
 
-async function encryptWithKey(packet: ReceivePacket): Promise<handler> {
+async function encryptWithKey(packet: PacketReader): Promise<handler> {
   const publicKey = parsePublicKey(packet);
   const len = password.length;
   const passwordBuffer: Uint8Array = new Uint8Array(len + 1);
@@ -58,7 +58,7 @@ async function encryptWithKey(packet: ReceivePacket): Promise<handler> {
   };
 }
 
-function parsePublicKey(packet: ReceivePacket): string {
+function parsePublicKey(packet: PacketReader): string {
   return packet.body.skip(1).readNullTerminatedString();
 }
 

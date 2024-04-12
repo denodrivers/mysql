@@ -7,7 +7,7 @@ import {
 } from "./constant/errors.ts";
 import { buildAuth } from "./packets/builders/auth.ts";
 import { buildQuery } from "./packets/builders/query.ts";
-import { ReceivePacket, SendPacket } from "./packets/packet.ts";
+import { PacketReader, PacketWriter } from "./packets/packet.ts";
 import { parseError } from "./packets/parsers/err.ts";
 import {
   AuthResult,
@@ -54,8 +54,26 @@ export class Connection {
   capabilities: number = 0;
   serverVersion: string = "";
 
-  private conn?: Deno.Conn = undefined;
+  protected _conn: Deno.Conn | null = null;
   private _timedOut = false;
+
+  get conn(): Deno.Conn {
+    if (!this._conn) {
+      throw new ConnectionError("Not connected");
+    }
+    if (this.state != ConnectionState.CONNECTED) {
+      if (this.state == ConnectionState.CLOSED) {
+        throw new ConnectionError("Connection is closed");
+      } else {
+        throw new ConnectionError("Must be connected first");
+      }
+    }
+    return this._conn;
+  }
+
+  set conn(conn: Deno.Conn | null) {
+    this._conn = conn;
+  }
 
   get remoteAddr(): string {
     return this.config.socketPath
@@ -112,8 +130,10 @@ export class Connection {
           const tlsData = buildSSLRequest(handshakePacket, {
             db: this.config.db,
           });
-          await new SendPacket(tlsData, ++handshakeSequenceNumber).send(
+          await PacketWriter.write(
             this.conn,
+            tlsData,
+            ++handshakeSequenceNumber,
           );
           this.conn = await Deno.startTls(this.conn, {
             hostname,
@@ -130,7 +150,7 @@ export class Connection {
         ssl: isSSL,
       });
 
-      await new SendPacket(data, ++handshakeSequenceNumber).send(this.conn);
+      await PacketWriter.write(this.conn, data, ++handshakeSequenceNumber);
 
       this.state = ConnectionState.CONNECTING;
       this.serverVersion = handshakePacket.serverVersion;
@@ -170,7 +190,7 @@ export class Connection {
             authData = Uint8Array.from([]);
           }
 
-          await new SendPacket(authData, receive.header.no + 1).send(this.conn);
+          await PacketWriter.write(this.conn, authData, receive.header.no + 1);
 
           receive = await this.nextPacket();
           const authSwitch2 = parseAuthSwitch(receive.body);
@@ -188,7 +208,7 @@ export class Connection {
         while (!result.done) {
           if (result.data) {
             const sequenceNumber = receive.header.no + 1;
-            await new SendPacket(result.data, sequenceNumber).send(this.conn);
+            await PacketWriter.write(this.conn, result.data, sequenceNumber);
             receive = await this.nextPacket();
           }
           if (result.quickRead) {
@@ -226,7 +246,7 @@ export class Connection {
     await this._connect();
   }
 
-  private async nextPacket(): Promise<ReceivePacket> {
+  private async nextPacket(): Promise<PacketReader> {
     if (!this.conn) {
       throw new ConnectionError("Not connected");
     }
@@ -237,9 +257,9 @@ export class Connection {
         this.config.timeout,
       )
       : null;
-    let packet: ReceivePacket | null;
+    let packet: PacketReader | null;
     try {
-      packet = await new ReceivePacket().parse(this.conn!);
+      packet = await PacketReader.read(this.conn);
     } catch (error) {
       if (this._timedOut) {
         // Connection has been closed by timeoutCallback.
@@ -314,7 +334,7 @@ export class Connection {
     }
     const data = buildQuery(sql, params);
     try {
-      await new SendPacket(data, 0).send(this.conn!);
+      await PacketWriter.write(this.conn, data, 0);
       let receive = await this.nextPacket();
       if (receive.type === PacketType.OK_Packet) {
         receive.body.skip(1);
