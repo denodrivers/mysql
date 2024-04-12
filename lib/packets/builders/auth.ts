@@ -6,10 +6,10 @@ import type { HandshakeBody } from "../parsers/handshake.ts";
 import { clientCapabilities } from "./client_capabilities.ts";
 
 /** @ignore */
-export function buildAuth(
+export async function buildAuth(
   packet: HandshakeBody,
-  params: { username: string; password?: string; db?: string; ssl?: boolean },
-): Uint8Array {
+  params: { username: string; password?: string; db?: string; ssl: boolean },
+): Promise<Uint8Array> {
   const clientParam: number = clientCapabilities(packet, params);
 
   if (packet.serverCapabilities & ServerCapabilities.CLIENT_PLUGIN_AUTH) {
@@ -21,7 +21,7 @@ export function buildAuth(
       .skip(23)
       .writeNullTerminatedString(params.username);
     if (params.password) {
-      const authData = auth(
+      const authData = await auth(
         packet.authPluginName,
         params.password,
         packet.seed,

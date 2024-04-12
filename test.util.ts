@@ -1,5 +1,8 @@
+import { resolve } from "@std/path";
 import { Client, type ClientConfig, type Connection } from "./mod.ts";
 import { assertEquals } from "@std/assert";
+
+export const DIR_TMP_TEST = resolve("tmp_test");
 
 const { DB_PORT, DB_NAME, DB_PASSWORD, DB_USER, DB_HOST, DB_SOCKPATH } = Deno
   .env.toObject();

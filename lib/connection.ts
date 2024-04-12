@@ -17,7 +17,7 @@ import {
 import {
   type FieldInfo,
   parseField,
-  parseRow,
+  parseRowObject,
 } from "./packets/parsers/result.ts";
 import { PacketType } from "./constant/packet.ts";
 import authPlugin from "./auth_plugin/index.ts";
@@ -143,7 +143,7 @@ export class Connection {
         isSSL = true;
       }
 
-      const data = buildAuth(handshakePacket, {
+      const data = await buildAuth(handshakePacket, {
         username,
         password,
         db: this.config.db,
@@ -370,7 +370,7 @@ export class Connection {
           if (receive.type === PacketType.EOF_Packet) {
             break;
           } else {
-            const row = parseRow(receive.body, fields);
+            const row = parseRowObject(receive.body, fields);
             rows.push(row);
           }
         }
@@ -395,7 +395,7 @@ export class Connection {
         return { done: true };
       }
 
-      const value = parseRow(receive.body, fields);
+      const value = parseRowObject(receive.body, fields);
 
       return {
         done: false,
