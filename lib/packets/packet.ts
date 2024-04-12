@@ -1,8 +1,8 @@
 import { byteFormat } from "../util.ts";
 import { BufferReader, BufferWriter } from "../buffer.ts";
 import { WriteError } from "../constant/errors.ts";
-import { debug, log } from "../logger.ts";
 import { PacketType } from "../constant/packet.ts";
+import { logger } from "../logger.ts";
 
 /** @ignore */
 interface PacketHeader {
@@ -24,9 +24,7 @@ export class SendPacket {
     data.writeUints(3, this.header.size);
     data.write(this.header.no);
     data.writeBuffer(body);
-    debug(() => {
-      log.debug(`send: ${data.length}B \n${byteFormat(data.buffer)}\n`);
-    });
+    logger().debug(`send: ${data.length}B \n${byteFormat(data.buffer)}\n`);
     try {
       let wrote = 0;
       do {
@@ -76,15 +74,13 @@ export class ReceivePacket {
         break;
     }
 
-    debug(() => {
+    logger().debug(() => {
       const data = new Uint8Array(readCount);
       data.set(header.buffer);
       data.set(this.body.buffer, 4);
-      log.debug(
-        `receive: ${readCount}B, size = ${this.header.size}, no = ${this.header.no} \n${
-          byteFormat(data)
-        }\n`,
-      );
+      return `receive: ${readCount}B, size = ${this.header.size}, no = ${this.header.no} \n${
+        byteFormat(data)
+      }\n`;
     });
 
     return this;

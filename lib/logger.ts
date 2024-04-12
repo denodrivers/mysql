@@ -1,51 +1,12 @@
-import * as log from "@std/log";
+import { getLogger } from "@std/log";
+import { MODULE_NAME } from "./util.ts";
 
-let logger = log.getLogger();
-
-export { logger as log };
-
-let isDebug = false;
-
-/** @ignore */
-export function debug(func: Function) {
-  if (isDebug) {
-    func();
-  }
-}
-
-export interface LoggerConfig {
-  /** Enable logging (default: true) */
-  enable?: boolean;
-  /** The minimal level to print (default: "INFO") */
-  level?: log.LevelName;
-  /** A deno_std/log.Logger instance to be used as logger. When used, `level` is ignored. */
-  logger?: log.Logger;
-}
-
-export async function configLogger(config: LoggerConfig) {
-  let { enable = true, level = "INFO" } = config;
-  if (config.logger) level = config.logger.levelName;
-  isDebug = level == "DEBUG";
-
-  if (!enable) {
-    logger = new log.Logger("fakeLogger", "NOTSET", {});
-    logger.level = 0;
-  } else {
-    if (!config.logger) {
-      await log.setup({
-        handlers: {
-          console: new log.ConsoleHandler(level),
-        },
-        loggers: {
-          default: {
-            level: "DEBUG",
-            handlers: ["console"],
-          },
-        },
-      });
-      logger = log.getLogger();
-    } else {
-      logger = config.logger;
-    }
-  }
+/**
+ * Used for internal module logging,
+ * do not import this directly outside of this module.
+ *
+ * @see {@link https://deno.land/std/log/mod.ts}
+ */
+export function logger() {
+  return getLogger(MODULE_NAME);
 }

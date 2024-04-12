@@ -5,7 +5,6 @@ import {
   ReadError,
   ResponseTimeoutError,
 } from "./constant/errors.ts";
-import { log } from "./logger.ts";
 import { buildAuth } from "./packets/builders/auth.ts";
 import { buildQuery } from "./packets/builders/query.ts";
 import { ReceivePacket, SendPacket } from "./packets/packet.ts";
@@ -26,6 +25,7 @@ import { parseAuthSwitch } from "./packets/parsers/authswitch.ts";
 import auth from "./auth.ts";
 import ServerCapabilities from "./constant/capabilities.ts";
 import { buildSSLRequest } from "./packets/builders/tls.ts";
+import { logger } from "./logger.ts";
 
 /**
  * Connection state
@@ -76,7 +76,7 @@ export class Connection {
     }
     const { hostname, port = 3306, socketPath, username = "", password } =
       this.config;
-    log.info(`connecting ${this.remoteAddr}`);
+    logger().info(`connecting ${this.remoteAddr}`);
     this.conn = !socketPath
       ? await Deno.connect({
         transport: "tcp",
@@ -203,11 +203,11 @@ export class Connection {
       const header = receive.body.readUint8();
       if (header === 0xff) {
         const error = parseError(receive.body, this);
-        log.error(`connect error(${error.code}): ${error.message}`);
+        logger().error(`connect error(${error.code}): ${error.message}`);
         this.close();
         throw new Error(error.message);
       } else {
-        log.info(`connected to ${this.remoteAddr}`);
+        logger().info(`connected to ${this.remoteAddr}`);
         this.state = ConnectionState.CONNECTED;
       }
 
@@ -266,7 +266,7 @@ export class Connection {
   }
 
   private _timeoutCallback = () => {
-    log.info("connection read timed out");
+    logger().info("connection read timed out");
     this._timedOut = true;
     this.close();
   };
@@ -274,7 +274,7 @@ export class Connection {
   /** Close database connection */
   close(): void {
     if (this.state != ConnectionState.CLOSED) {
-      log.info("close connection");
+      logger().info("close connection");
       this.conn?.close();
       this.state = ConnectionState.CLOSED;
     }

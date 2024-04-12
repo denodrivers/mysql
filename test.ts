@@ -12,8 +12,8 @@ import {
   testWithClient,
 } from "./test.util.ts";
 import * as stdlog from "@std/log";
-import { log } from "./lib/logger.ts";
 import { configLogger } from "./mod.ts";
+import { logger } from "./lib/logger.ts";
 
 testWithClient(async function testCreateDb(client) {
   await client.query(`CREATE DATABASE IF NOT EXISTS enok`);
@@ -380,11 +380,11 @@ Deno.test("configLogger()", async () => {
     },
   });
   await configLogger({ logger: stdlog.getLogger("mysql") });
-  log.info("Test log");
+  logger().info("Test log");
   assertEquals(logCount, 1);
 
   await configLogger({ enable: false });
-  log.info("Test log");
+  logger().info("Test log");
   assertEquals(logCount, 1);
 });
 

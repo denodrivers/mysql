@@ -1,6 +1,6 @@
 import { DeferredStack } from "./deferred.ts";
 import { Connection } from "./connection.ts";
-import { log } from "./logger.ts";
+import { logger } from "./logger.ts";
 
 /** @ignore */
 export class PoolConnection extends Connection {
@@ -16,12 +16,12 @@ export class PoolConnection extends Connection {
     this._idle = true;
     if (this.config.idleTimeout) {
       this._idleTimer = setTimeout(() => {
-        log.info("connection idle timeout");
+        logger().info("connection idle timeout");
         this._pool!.remove(this);
         try {
           this.close();
         } catch (error) {
-          log.warn(`error closing idle connection`, error);
+          logger().warn(`error closing idle connection`, error);
         }
       }, this.config.idleTimeout);
       try {

@@ -4,7 +4,7 @@ import {
   type ExecuteResult,
 } from "./connection.ts";
 import { ConnectionPool, PoolConnection } from "./pool.ts";
-import { log } from "./logger.ts";
+import { logger } from "./logger.ts";
 
 /**
  * Client Config
@@ -149,7 +149,7 @@ export class Client {
         return result;
       } catch (error) {
         if (connection.state == ConnectionState.CONNECTED) {
-          log.info(`ROLLBACK: ${error.message}`);
+          logger().info(`ROLLBACK: ${error.message}`);
           await connection.execute("ROLLBACK");
         }
         throw error;
