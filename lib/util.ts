@@ -1,4 +1,8 @@
 import { green } from "@std/fmt/colors";
+import meta from "../deno.json" with { type: "json" };
+
+export const MODULE_NAME = meta.name;
+export const VERSION = meta.version;
 
 export function xor(a: Uint8Array, b: Uint8Array): Uint8Array {
   return a.map((byte, index) => {
