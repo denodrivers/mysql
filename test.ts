@@ -3,7 +3,7 @@ import { lessThan, parse } from "@std/semver";
 import {
   ConnectionError,
   ResponseTimeoutError,
-} from "./src/constant/errors.ts";
+} from "./lib/constant/errors.ts";
 import {
   createTestDB,
   delay,
@@ -12,7 +12,7 @@ import {
   testWithClient,
 } from "./test.util.ts";
 import * as stdlog from "@std/log";
-import { log } from "./src/logger.ts";
+import { log } from "./lib/logger.ts";
 import { configLogger } from "./mod.ts";
 
 testWithClient(async function testCreateDb(client) {

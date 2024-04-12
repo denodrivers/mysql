@@ -1,12 +1,12 @@
-export type { ClientConfig } from "./src/client.ts";
-export { Client } from "./src/client.ts";
-export type { TLSConfig } from "./src/client.ts";
-export { TLSMode } from "./src/client.ts";
+export type { ClientConfig } from "./lib/client.ts";
+export { Client } from "./lib/client.ts";
+export type { TLSConfig } from "./lib/client.ts";
+export { TLSMode } from "./lib/client.ts";
 
-export type { ExecuteResult } from "./src/connection.ts";
-export { Connection } from "./src/connection.ts";
+export type { ExecuteResult } from "./lib/connection.ts";
+export { Connection } from "./lib/connection.ts";
 
-export type { LoggerConfig } from "./src/logger.ts";
-export { configLogger } from "./src/logger.ts";
+export type { LoggerConfig } from "./lib/logger.ts";
+export { configLogger } from "./lib/logger.ts";
 
 export * as log from "@std/log";

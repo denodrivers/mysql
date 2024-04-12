@@ -2,7 +2,7 @@ import { byteFormat } from "../util.ts";
 import { BufferReader, BufferWriter } from "../buffer.ts";
 import { WriteError } from "../constant/errors.ts";
 import { debug, log } from "../logger.ts";
-import { PacketType } from "../../src/constant/packet.ts";
+import { PacketType } from "../constant/packet.ts";
 
 /** @ignore */
 interface PacketHeader {
