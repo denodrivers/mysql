@@ -1,9 +1,9 @@
 import { assertEquals, assertRejects } from "@std/assert";
 import { lessThan, parse } from "@std/semver";
 import {
-  ConnectionError,
-  ResponseTimeoutError,
-} from "./lib/constant/errors.ts";
+  MysqlConnectionError,
+  MysqlResponseTimeoutError,
+} from "./lib/utils/errors.ts";
 import {
   createTestDB,
   delay,
@@ -189,7 +189,7 @@ testWithClient(async function testQueryOnClosed(client) {
         conn.close();
         await conn.query("SELECT 1");
       });
-    }, ConnectionError);
+    }, MysqlConnectionError);
   }
   assertEquals(client.pool?.size, 0);
   await client.query("select 1");
@@ -265,7 +265,7 @@ testWithClient(async function testReadTimeout(client) {
 
   await assertRejects(async () => {
     await client.execute("select sleep(0.7)");
-  }, ResponseTimeoutError);
+  }, MysqlResponseTimeoutError);
 
   assertEquals(client.pool, {
     maxSize: 3,

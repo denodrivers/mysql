@@ -1,6 +1,7 @@
 import { DeferredStack } from "./deferred.ts";
 import { Connection } from "./connection.ts";
 import { logger } from "./logger.ts";
+import { MysqlError } from "./utils/errors.ts";
 
 /** @ignore */
 export class PoolConnection extends Connection {
@@ -90,7 +91,7 @@ export class ConnectionPool {
 
   async pop(): Promise<PoolConnection> {
     if (this._closed) {
-      throw new Error("Connection pool is closed");
+      throw new MysqlError("Connection pool is closed");
     }
     let conn = this._deferred.tryPopAvailable();
     if (conn) {

@@ -1,6 +1,7 @@
 import { crypto, type DigestAlgorithm } from "@std/crypto";
 import { xor } from "./util.ts";
 import { encode } from "./buffer.ts";
+import { MysqlError } from "./utils/errors.ts";
 
 async function hash(
   algorithm: DigestAlgorithm,
@@ -47,6 +48,6 @@ export default function auth(
     case "caching_sha2_password":
       return cachingSha2Password(password, seed);
     default:
-      throw new Error("Not supported");
+      throw new MysqlError("Not supported");
   }
 }

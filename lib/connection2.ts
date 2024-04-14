@@ -1,9 +1,9 @@
 import {
-  ConnectionError,
-  ProtocolError,
-  ReadError,
-  ResponseTimeoutError,
-} from "./constant/errors.ts";
+  MysqlConnectionError,
+  MysqlProtocolError,
+  MysqlReadError,
+  MysqlResponseTimeoutError,
+} from "./utils/errors.ts";
 import { buildAuth } from "./packets/builders/auth.ts";
 import { PacketReader, PacketWriter } from "./packets/packet.ts";
 import { parseError } from "./packets/parsers/err.ts";
@@ -145,13 +145,13 @@ export class MysqlConnection implements SqlxConnectable<ConnectionOptions> {
 
   get conn(): Deno.Conn {
     if (!this._conn) {
-      throw new ConnectionError("Not connected");
+      throw new MysqlConnectionError("Not connected");
     }
     if (this.state != ConnectionState.CONNECTED) {
       if (this.state == ConnectionState.CLOSED) {
-        throw new ConnectionError("Connection is closed");
+        throw new MysqlConnectionError("Connection is closed");
       } else {
-        throw new ConnectionError("Must be connected first");
+        throw new MysqlConnectionError("Must be connected first");
       }
     }
     return this._conn;
@@ -470,7 +470,7 @@ export class MysqlConnection implements SqlxConnectable<ConnectionOptions> {
 
   async #nextPacket(): Promise<PacketReader> {
     if (!this._conn) {
-      throw new ConnectionError("Not connected");
+      throw new MysqlConnectionError("Not connected");
     }
 
     const timeoutTimer = this.config.parameters.connectTimeout
@@ -485,7 +485,7 @@ export class MysqlConnection implements SqlxConnectable<ConnectionOptions> {
     } catch (error) {
       if (this._timedOut) {
         // Connection has been closed by timeoutCallback.
-        throw new ResponseTimeoutError("Connection read timed out");
+        throw new MysqlResponseTimeoutError("Connection read timed out");
       }
       timeoutTimer && clearTimeout(timeoutTimer);
       this.close();
@@ -497,7 +497,7 @@ export class MysqlConnection implements SqlxConnectable<ConnectionOptions> {
       // Connection is half-closed by the remote host.
       // Call close() to avoid leaking socket.
       this.close();
-      throw new ReadError("Connection closed unexpectedly");
+      throw new MysqlReadError("Connection closed unexpectedly");
     }
     if (packet.type === PacketType.ERR_Packet) {
       packet.body.skip(1);
@@ -526,7 +526,7 @@ export class MysqlConnection implements SqlxConnectable<ConnectionOptions> {
           lastInsertId: receive.body.readEncodedLen(),
         };
       } else if (receive.type !== PacketType.Result) {
-        throw new ProtocolError();
+        throw new MysqlProtocolError(receive.type.toString());
       }
       let fieldCount = receive.body.readEncodedLen();
       const fields: FieldInfo[] = [];
@@ -542,7 +542,7 @@ export class MysqlConnection implements SqlxConnectable<ConnectionOptions> {
         // EOF(mysql < 5.7 or mariadb < 10.2)
         receive = await this.#nextPacket();
         if (receive.type !== PacketType.EOF_Packet) {
-          throw new ProtocolError();
+          throw new MysqlProtocolError(receive.type.toString());
         }
       }
 
@@ -572,7 +572,7 @@ export class MysqlConnection implements SqlxConnectable<ConnectionOptions> {
           lastInsertId: receive.body.readEncodedLen(),
         };
       } else if (receive.type !== PacketType.Result) {
-        throw new ProtocolError();
+        throw new MysqlProtocolError(receive.type.toString());
       }
       return {
         affectedRows: 0,

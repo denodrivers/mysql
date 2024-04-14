@@ -5,6 +5,7 @@ import {
 } from "./connection.ts";
 import { ConnectionPool, PoolConnection } from "./pool.ts";
 import { logger } from "./logger.ts";
+import { MysqlError } from "./utils/errors.ts";
 
 /**
  * Client Config
@@ -121,7 +122,7 @@ export class Client {
 
   async useConnection<T>(fn: (conn: Connection) => Promise<T>) {
     if (!this._pool) {
-      throw new Error("Unconnected");
+      throw new MysqlError("Unconnected");
     }
     const connection = await this._pool.pop();
     try {

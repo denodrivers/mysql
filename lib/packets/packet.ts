@@ -1,6 +1,6 @@
 import { byteFormat } from "../util.ts";
 import { BufferReader, BufferWriter } from "../buffer.ts";
-import { WriteError } from "../constant/errors.ts";
+import { MysqlWriteError } from "../utils/errors.ts";
 import { logger } from "../logger.ts";
 import { PacketType } from "../constant/packet.ts";
 
@@ -41,7 +41,7 @@ export class PacketWriter {
         wrote += await conn.write(data.buffer.subarray(wrote));
       } while (wrote < data.length);
     } catch (error) {
-      throw new WriteError(error.message);
+      throw new MysqlWriteError(error.message);
     }
   }
 

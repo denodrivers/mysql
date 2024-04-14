@@ -1,10 +1,11 @@
 import { type ClientConfig, TLSMode } from "./client.ts";
 import {
-  ConnectionError,
-  ProtocolError,
-  ReadError,
-  ResponseTimeoutError,
-} from "./constant/errors.ts";
+  MysqlConnectionError,
+  MysqlError,
+  MysqlProtocolError,
+  MysqlReadError,
+  MysqlResponseTimeoutError,
+} from "./utils/errors.ts";
 import { buildAuth } from "./packets/builders/auth.ts";
 import { buildQuery } from "./packets/builders/query.ts";
 import { PacketReader, PacketWriter } from "./packets/packet.ts";
@@ -59,13 +60,13 @@ export class Connection {
 
   get conn(): Deno.Conn {
     if (!this._conn) {
-      throw new ConnectionError("Not connected");
+      throw new MysqlConnectionError("Not connected");
     }
     if (this.state != ConnectionState.CONNECTED) {
       if (this.state == ConnectionState.CLOSED) {
-        throw new ConnectionError("Connection is closed");
+        throw new MysqlConnectionError("Connection is closed");
       } else {
-        throw new ConnectionError("Must be connected first");
+        throw new MysqlConnectionError("Must be connected first");
       }
     }
     return this._conn;
@@ -90,7 +91,7 @@ export class Connection {
       this.config.tls.mode !== TLSMode.DISABLED &&
       this.config.tls.mode !== TLSMode.VERIFY_IDENTITY
     ) {
-      throw new Error("unsupported tls mode");
+      throw new MysqlError("unsupported tls mode");
     }
     const { hostname, port = 3306, socketPath, username = "", password } =
       this.config;
@@ -121,7 +122,7 @@ export class Connection {
           (handshakePacket.serverCapabilities &
             ServerCapabilities.CLIENT_SSL) === 0
         ) {
-          throw new Error("Server does not support TLS");
+          throw new MysqlError("Server does not support TLS");
         }
         if (
           (handshakePacket.serverCapabilities &
@@ -193,7 +194,7 @@ export class Connection {
           receive = await this.nextPacket();
           const authSwitch2 = parseAuthSwitch(receive.body);
           if (authSwitch2.authPluginName !== "") {
-            throw new Error(
+            throw new MysqlError(
               "Do not allow to change the auth plugin more than once!",
             );
           }
@@ -227,7 +228,7 @@ export class Connection {
             break;
           }
           default:
-            throw new Error("Unsupported auth plugin");
+            throw new MysqlError("Unsupported auth plugin");
         }
       }
 
@@ -236,7 +237,7 @@ export class Connection {
         const error = parseError(receive.body, this);
         logger().error(`connect error(${error.code}): ${error.message}`);
         this.close();
-        throw new Error(error.message);
+        throw new MysqlError(error.message);
       } else {
         logger().info(`connected to ${this.remoteAddr}`);
         this.state = ConnectionState.CONNECTED;
@@ -259,7 +260,7 @@ export class Connection {
 
   private async nextPacket(): Promise<PacketReader> {
     if (!this.conn) {
-      throw new ConnectionError("Not connected");
+      throw new MysqlConnectionError("Not connected");
     }
 
     const timeoutTimer = this.config.timeout
@@ -274,7 +275,7 @@ export class Connection {
     } catch (error) {
       if (this._timedOut) {
         // Connection has been closed by timeoutCallback.
-        throw new ResponseTimeoutError("Connection read timed out");
+        throw new MysqlResponseTimeoutError("Connection read timed out");
       }
       timeoutTimer && clearTimeout(timeoutTimer);
       this.close();
@@ -286,12 +287,12 @@ export class Connection {
       // Connection is half-closed by the remote host.
       // Call close() to avoid leaking socket.
       this.close();
-      throw new ReadError("Connection closed unexpectedly");
+      throw new MysqlReadError("Connection closed unexpectedly");
     }
     if (packet.type === PacketType.ERR_Packet) {
       packet.body.skip(1);
       const error = parseError(packet.body, this);
-      throw new Error(error.message);
+      throw new MysqlError(error.message);
     }
     return packet!;
   }
@@ -338,9 +339,9 @@ export class Connection {
   ): Promise<ExecuteResult> {
     if (this.state != ConnectionState.CONNECTED) {
       if (this.state == ConnectionState.CLOSED) {
-        throw new ConnectionError("Connection is closed");
+        throw new MysqlConnectionError("Connection is closed");
       } else {
-        throw new ConnectionError("Must be connected first");
+        throw new MysqlConnectionError("Must be connected first");
       }
     }
     const data = buildQuery(sql, params);
@@ -354,7 +355,7 @@ export class Connection {
           lastInsertId: receive.body.readEncodedLen(),
         };
       } else if (receive.type !== PacketType.Result) {
-        throw new ProtocolError();
+        throw new MysqlProtocolError(receive.type.toString());
       }
       let fieldCount = receive.body.readEncodedLen();
       const fields: FieldInfo[] = [];
@@ -371,7 +372,7 @@ export class Connection {
         // EOF(mysql < 5.7 or mariadb < 10.2)
         receive = await this.nextPacket();
         if (receive.type !== PacketType.EOF_Packet) {
-          throw new ProtocolError();
+          throw new MysqlProtocolError(receive.type.toString());
         }
       }
 
