@@ -1,5 +1,5 @@
 import { type BufferReader, BufferWriter } from "../../buffer.ts";
-import ServerCapabilities from "../../constant/capabilities.ts";
+import { ServerCapabilities } from "../../constant/capabilities.ts";
 import { PacketType } from "../../constant/packet.ts";
 import type { PacketReader } from "../packet.ts";
 

@@ -1,4 +1,4 @@
-enum ServerCapabilities {
+export enum ServerCapabilities {
   CLIENT_LONG_PASSWORD = 0x00000001,
   CLIENT_FOUND_ROWS = 0x00000002,
   CLIENT_LONG_FLAG = 0x00000004,
@@ -23,5 +23,3 @@ enum ServerCapabilities {
   CLIENT_PLUGIN_AUTH_LENENC_CLIENT_DATA = 0x00200000,
   CLIENT_DEPRECATE_EOF = 0x01000000,
 }
-
-export default ServerCapabilities;

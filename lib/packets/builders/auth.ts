@@ -1,6 +1,6 @@
 import auth from "../../auth.ts";
 import { BufferWriter } from "../../buffer.ts";
-import ServerCapabilities from "../../constant/capabilities.ts";
+import { ServerCapabilities } from "../../constant/capabilities.ts";
 import { Charset } from "../../constant/charset.ts";
 import type { HandshakeBody } from "../parsers/handshake.ts";
 import { clientCapabilities } from "./client_capabilities.ts";

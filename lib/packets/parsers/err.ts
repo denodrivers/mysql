@@ -1,6 +1,6 @@
 import type { BufferReader } from "../../buffer.ts";
 import type { Connection } from "../../connection.ts";
-import ServerCapabilities from "../../constant/capabilities.ts";
+import { ServerCapabilities } from "../../constant/capabilities.ts";
 
 /** @ignore */
 export interface ErrorPacket {

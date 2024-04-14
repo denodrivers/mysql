@@ -1,4 +1,4 @@
-import ServerCapabilities from "../../constant/capabilities.ts";
+import { ServerCapabilities } from "../../constant/capabilities.ts";
 import type { HandshakeBody } from "../parsers/handshake.ts";
 
 export function clientCapabilities(
