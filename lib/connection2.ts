@@ -16,10 +16,9 @@ import {
   type FieldInfo,
   parseField,
   parseRow,
-  parseRowObject,
 } from "./packets/parsers/result.ts";
 import { PacketType } from "./constant/packet.ts";
-import authPlugin from "./auth_plugin/index.ts";
+import { AuthPlugins } from "./auth_plugins/mod.ts";
 import { parseAuthSwitch } from "./packets/parsers/authswitch.ts";
 import auth from "./auth.ts";
 import ServerCapabilities from "./constant/capabilities.ts";
@@ -31,10 +30,10 @@ import type {
   SqlxConnectionOptions,
   SqlxParameterType,
 } from "@halvardm/sqlx";
-import { buildQuery } from "./packets/builders/query.ts";
 import { VERSION } from "./util.ts";
-import { parse, resolve } from "@std/path";
+import { resolve } from "@std/path";
 import { toCamelCase } from "@std/text";
+import { AuthPluginName } from "./auth_plugins/mod.ts";
 export type MysqlParameterType = SqlxParameterType;
 
 /**
@@ -255,13 +254,11 @@ export class MysqlConnection implements SqlxConnectable<ConnectionOptions> {
       receive = await this.#nextPacket();
 
       const authResult = parseAuth(receive);
-      let handler;
+      let authPlugin: AuthPluginName | undefined = undefined;
 
       switch (authResult) {
         case AuthResult.AuthMoreRequired: {
-          const adaptedPlugin =
-            (authPlugin as any)[handshakePacket.authPluginName];
-          handler = adaptedPlugin;
+          authPlugin = handshakePacket.authPluginName as AuthPluginName;
           break;
         }
         case AuthResult.MethodMismatch: {
@@ -302,28 +299,34 @@ export class MysqlConnection implements SqlxConnectable<ConnectionOptions> {
         }
       }
 
-      let result;
-      if (handler) {
-        result = await handler.start(
-          handshakePacket.seed,
-          this.config.password!,
-        );
-        while (!result.done) {
-          if (result.data) {
-            const sequenceNumber = receive.header.no + 1;
-            await PacketWriter.write(
-              this.conn,
-              result.data,
-              sequenceNumber,
+      if (authPlugin) {
+        switch (authPlugin) {
+          case AuthPluginName.CachingSha2Password: {
+            const plugin = new AuthPlugins[authPlugin](
+              handshakePacket.seed,
+              this.config.password!,
             );
-            receive = await this.#nextPacket();
+
+            while (!plugin.done) {
+              if (plugin.data) {
+                const sequenceNumber = receive.header.no + 1;
+                await PacketWriter.write(
+                  this.conn,
+                  plugin.data,
+                  sequenceNumber,
+                );
+                receive = await this.#nextPacket();
+              }
+              if (plugin.quickRead) {
+                await this.#nextPacket();
+              }
+
+              await plugin.next(receive);
+            }
+            break;
           }
-          if (result.quickRead) {
-            await this.#nextPacket();
-          }
-          if (result.next) {
-            result = await result.next(receive);
-          }
+          default:
+            throw new Error("Unsupported auth plugin");
         }
       }
 
