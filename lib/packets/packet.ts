@@ -85,7 +85,7 @@ export class PacketReader {
    * @param buffer The buffer to read into
    * @returns The number of bytes read
    */
-  static async _readSubarray(
+  static async #readSubarray(
     conn: Deno.Conn,
     buffer: Uint8Array,
   ): Promise<number | null> {
@@ -108,7 +108,7 @@ export class PacketReader {
   static async read(conn: Deno.Conn): Promise<PacketReader | null> {
     const headerReader = new BufferReader(new Uint8Array(4));
     let readCount = 0;
-    let nread = await this._readSubarray(conn, headerReader.buffer);
+    let nread = await this.#readSubarray(conn, headerReader.buffer);
     if (nread === null) return null;
     readCount = nread;
     const bodySize = headerReader.readUints(3);
@@ -117,7 +117,7 @@ export class PacketReader {
       no: headerReader.readUint8(),
     };
     const bodyReader = new BufferReader(new Uint8Array(bodySize));
-    nread = await this._readSubarray(conn, bodyReader.buffer);
+    nread = await this.#readSubarray(conn, bodyReader.buffer);
     if (nread === null) return null;
     readCount += nread;
 
