@@ -1,4 +1,4 @@
-import type { BufferReader } from "../../buffer.ts";
+import type { BufferReader } from "../../utils/buffer.ts";
 import { MysqlDataType } from "../../constant/mysql_types.ts";
 import type { ArrayRow, Row, SqlxParameterType } from "@halvardm/sqlx";
 

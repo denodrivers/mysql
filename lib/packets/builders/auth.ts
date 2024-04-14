@@ -1,5 +1,5 @@
 import auth from "../../utils/hash.ts";
-import { BufferWriter } from "../../buffer.ts";
+import { BufferWriter } from "../../utils/buffer.ts";
 import { ServerCapabilities } from "../../constant/capabilities.ts";
 import { Charset } from "../../constant/charset.ts";
 import type { HandshakeBody } from "../parsers/handshake.ts";

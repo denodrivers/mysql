@@ -23,14 +23,14 @@ import { parseAuthSwitch } from "./packets/parsers/authswitch.ts";
 import auth from "./utils/hash.ts";
 import { ServerCapabilities } from "./constant/capabilities.ts";
 import { buildSSLRequest } from "./packets/builders/tls.ts";
-import { logger } from "./logger.ts";
+import { logger } from "./utils/logger.ts";
 import type {
   ArrayRow,
   SqlxConnectable,
   SqlxConnectionOptions,
   SqlxParameterType,
 } from "@halvardm/sqlx";
-import { VERSION } from "./util.ts";
+import { VERSION } from "./utils/meta.ts";
 import { resolve } from "@std/path";
 import { toCamelCase } from "@std/text";
 import { AuthPluginName } from "./auth_plugins/mod.ts";

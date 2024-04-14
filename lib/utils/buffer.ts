@@ -1,17 +1,8 @@
-const encoder = new TextEncoder();
-const decoder = new TextDecoder();
+import { decode, encode } from "./encoding.ts";
 
-/** @ignore */
-export function encode(input: string) {
-  return encoder.encode(input);
-}
-
-/** @ignore */
-export function decode(input: BufferSource) {
-  return decoder.decode(input);
-}
-
-/** @ignore */
+/**
+ * Buffer reader utility class
+ */
 export class BufferReader {
   private pos: number = 0;
   constructor(readonly buffer: Uint8Array) {}
@@ -96,7 +87,9 @@ export class BufferReader {
   }
 }
 
-/** @ignore */
+/**
+ * Buffer writer utility class
+ */
 export class BufferWriter {
   private pos: number = 0;
   constructor(readonly buffer: Uint8Array) {}
@@ -130,14 +123,6 @@ export class BufferWriter {
   write(byte: number): BufferWriter {
     this.buffer[this.pos++] = byte;
     return this;
-  }
-
-  writeInt16LE(num: number) {}
-
-  writeIntLE(num: number, len: number) {
-    const int = new Int32Array(1);
-    int[0] = 40;
-    console.log(int);
   }
 
   writeUint16(num: number): BufferWriter {

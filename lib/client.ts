@@ -4,7 +4,7 @@ import {
   type ExecuteResult,
 } from "./connection.ts";
 import { ConnectionPool, PoolConnection } from "./pool.ts";
-import { logger } from "./logger.ts";
+import { logger } from "./utils/logger.ts";
 import { MysqlError } from "./utils/errors.ts";
 
 /**

@@ -5,7 +5,7 @@ import {
   AuthStatusFlags,
 } from "./caching_sha2_password.ts";
 import { ComQueryResponsePacket } from "../constant/packet.ts";
-import { BufferReader } from "../buffer.ts";
+import { BufferReader } from "../utils/buffer.ts";
 
 Deno.test("AuthPluginCachingSha2Password", async (t) => {
   await t.step("statusFlag FastPath", async () => {

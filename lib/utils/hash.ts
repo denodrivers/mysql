@@ -1,7 +1,7 @@
 import { crypto, type DigestAlgorithm } from "@std/crypto";
-import { xor } from "../util.ts";
-import { encode } from "../buffer.ts";
+import { xor } from "./bytes.ts";
 import { MysqlError } from "./errors.ts";
+import { encode } from "./encoding.ts";
 
 async function hash(
   algorithm: DigestAlgorithm,

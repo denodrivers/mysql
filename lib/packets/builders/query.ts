@@ -1,5 +1,6 @@
-import { replaceParams } from "../../util.ts";
-import { BufferWriter, encode } from "../../buffer.ts";
+import { replaceParams } from "../../utils/query.ts";
+import { BufferWriter } from "../../utils/buffer.ts";
+import { encode } from "../../utils/encoding.ts";
 
 /** @ignore */
 export function buildQuery(sql: string, params: any[] = []): Uint8Array {

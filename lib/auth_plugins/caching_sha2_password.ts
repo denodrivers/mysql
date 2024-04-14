@@ -1,4 +1,4 @@
-import { xor } from "../util.ts";
+import { xor } from "../utils/bytes.ts";
 import type { PacketReader } from "../packets/packet.ts";
 import { encryptWithPublicKey } from "../utils/crypto.ts";
 

@@ -1,4 +1,4 @@
-import { type BufferReader, BufferWriter } from "../../buffer.ts";
+import { type BufferReader, BufferWriter } from "../../utils/buffer.ts";
 import { ServerCapabilities } from "../../constant/capabilities.ts";
 import { ComQueryResponsePacket } from "../../constant/packet.ts";
 import type { PacketReader } from "../packet.ts";

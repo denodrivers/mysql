@@ -1,6 +1,6 @@
 import { DeferredStack } from "./deferred.ts";
 import { Connection } from "./connection.ts";
-import { logger } from "./logger.ts";
+import { logger } from "./utils/logger.ts";
 import { MysqlError } from "./utils/errors.ts";
 
 /** @ignore */

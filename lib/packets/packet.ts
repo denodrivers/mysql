@@ -1,7 +1,7 @@
-import { byteFormat } from "../util.ts";
-import { BufferReader, BufferWriter } from "../buffer.ts";
+import { hexdump } from "../utils/bytes.ts";
+import { BufferReader, BufferWriter } from "../utils/buffer.ts";
 import { MysqlWriteError } from "../utils/errors.ts";
-import { logger } from "../logger.ts";
+import { logger } from "../utils/logger.ts";
 import { ComQueryResponsePacket } from "../constant/packet.ts";
 
 /** @ignore */
@@ -34,7 +34,7 @@ export class PacketWriter {
     data.writeUints(3, this.header.size);
     data.write(this.header.no);
     data.writeBuffer(body);
-    logger().debug(`send: ${data.length}B \n${byteFormat(data.buffer)}\n`);
+    logger().debug(`send: ${data.length}B \n${hexdump(data.buffer)}\n`);
     try {
       let wrote = 0;
       do {
@@ -146,7 +146,7 @@ export class PacketReader {
       data.set(headerReader.buffer);
       data.set(bodyReader.buffer, 4);
       return `receive: ${readCount}B, size = ${header.size}, no = ${header.no} \n${
-        byteFormat(data)
+        hexdump(data)
       }\n`;
     });
 

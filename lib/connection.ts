@@ -26,7 +26,7 @@ import { parseAuthSwitch } from "./packets/parsers/authswitch.ts";
 import auth from "./utils/hash.ts";
 import { ServerCapabilities } from "./constant/capabilities.ts";
 import { buildSSLRequest } from "./packets/builders/tls.ts";
-import { logger } from "./logger.ts";
+import { logger } from "./utils/logger.ts";
 
 /**
  * Connection state
@@ -80,6 +80,10 @@ export class Connection {
     return this.config.socketPath
       ? `unix:${this.config.socketPath}`
       : `${this.config.hostname}:${this.config.port}`;
+  }
+
+  get isMariaDB(): boolean {
+    return this.serverVersion.includes("MariaDB");
   }
 
   constructor(readonly config: ClientConfig) {}
