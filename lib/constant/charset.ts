@@ -1,3 +1,6 @@
+/**
+ * MySQL Charset
+ */
 export enum Charset {
   BIG5_CHINESE_CI = 1,
   LATIN2_CZECH_CS = 2,

@@ -1,3 +1,6 @@
+/**
+ * MySQL Server Capabilities
+ */
 export enum ServerCapabilities {
   CLIENT_LONG_PASSWORD = 0x00000001,
   CLIENT_FOUND_ROWS = 0x00000002,

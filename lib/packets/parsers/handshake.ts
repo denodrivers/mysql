@@ -1,6 +1,6 @@
 import { type BufferReader, BufferWriter } from "../../buffer.ts";
 import { ServerCapabilities } from "../../constant/capabilities.ts";
-import { PacketType } from "../../constant/packet.ts";
+import { ComQueryResponsePacket } from "../../constant/packet.ts";
 import type { PacketReader } from "../packet.ts";
 
 /** @ignore */
@@ -75,11 +75,11 @@ export enum AuthResult {
 }
 export function parseAuth(packet: PacketReader): AuthResult {
   switch (packet.type) {
-    case PacketType.EOF_Packet:
+    case ComQueryResponsePacket.EOF_Packet:
       return AuthResult.MethodMismatch;
-    case PacketType.Result:
+    case ComQueryResponsePacket.Result:
       return AuthResult.AuthMoreRequired;
-    case PacketType.OK_Packet:
+    case ComQueryResponsePacket.OK_Packet:
       return AuthResult.AuthPassed;
     default:
       return AuthResult.AuthPassed;

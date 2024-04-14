@@ -1,28 +1,14 @@
 import type { BufferReader } from "../../buffer.ts";
-import {
-  MYSQL_TYPE_DATE,
-  MYSQL_TYPE_DATETIME,
-  MYSQL_TYPE_DATETIME2,
-  MYSQL_TYPE_DECIMAL,
-  MYSQL_TYPE_DOUBLE,
-  MYSQL_TYPE_FLOAT,
-  MYSQL_TYPE_INT24,
-  MYSQL_TYPE_LONG,
-  MYSQL_TYPE_LONGLONG,
-  MYSQL_TYPE_NEWDATE,
-  MYSQL_TYPE_NEWDECIMAL,
-  MYSQL_TYPE_SHORT,
-  MYSQL_TYPE_STRING,
-  MYSQL_TYPE_TIME,
-  MYSQL_TYPE_TIME2,
-  MYSQL_TYPE_TIMESTAMP,
-  MYSQL_TYPE_TIMESTAMP2,
-  MYSQL_TYPE_TINY,
-  MYSQL_TYPE_VAR_STRING,
-  MYSQL_TYPE_VARCHAR,
-} from "../../constant/mysql_types.ts";
+import { MysqlDataType } from "../../constant/mysql_types.ts";
+import type { ArrayRow, Row, SqlxParameterType } from "@halvardm/sqlx";
 
-/** @ignore */
+export type MysqlParameterType = SqlxParameterType<
+  string | number | bigint | Date | null
+>;
+
+/**
+ * Field information
+ */
 export interface FieldInfo {
   catalog: string;
   schema: string;
@@ -38,7 +24,9 @@ export interface FieldInfo {
   defaultVal: string;
 }
 
-/** @ignore */
+/**
+ * Parses the field
+ */
 export function parseField(reader: BufferReader): FieldInfo {
   const catalog = reader.readLenCodeString()!;
   const schema = reader.readLenCodeString()!;
@@ -70,16 +58,15 @@ export function parseField(reader: BufferReader): FieldInfo {
   };
 }
 
-/** @ignore */
-export function parseRowObject(reader: BufferReader, fields: FieldInfo[]): any {
-  const rowArray = parseRow(reader, fields);
-  return getRowObject(fields, rowArray);
-}
-
-export function parseRow(reader: BufferReader, fields: FieldInfo[]): unknown[] {
-  const row: unknown[] = [];
+/**
+ * Parse the row as an array
+ */
+export function parseRowArray(
+  reader: BufferReader,
+  fields: FieldInfo[],
+): ArrayRow<MysqlParameterType> {
+  const row: MysqlParameterType[] = [];
   for (const field of fields) {
-    const name = field.name;
     const val = reader.readLenCodeString();
     const parsedVal = val === null ? null : convertType(field, val);
     row.push(parsedVal);
@@ -87,8 +74,22 @@ export function parseRow(reader: BufferReader, fields: FieldInfo[]): unknown[] {
   return row;
 }
 
-export function getRowObject(fields: FieldInfo[], row: unknown[]): any {
-  const obj: any = {};
+/**
+ * Parses the row as an object
+ */
+export function parseRowObject(
+  reader: BufferReader,
+  fields: FieldInfo[],
+): Row<MysqlParameterType> {
+  const rowArray = parseRowArray(reader, fields);
+  return getRowObject(fields, rowArray);
+}
+
+export function getRowObject(
+  fields: FieldInfo[],
+  row: ArrayRow<MysqlParameterType>,
+): Row<MysqlParameterType> {
+  const obj: Row<MysqlParameterType> = {};
   for (const [i, field] of fields.entries()) {
     const name = field.name;
     obj[name] = row[i];
@@ -96,23 +97,25 @@ export function getRowObject(fields: FieldInfo[], row: unknown[]): any {
   return obj;
 }
 
-/** @ignore */
-function convertType(field: FieldInfo, val: string): any {
-  const { fieldType, fieldLen } = field;
+/**
+ * Converts the value to the correct type
+ */
+function convertType(field: FieldInfo, val: string): MysqlParameterType {
+  const { fieldType } = field;
   switch (fieldType) {
-    case MYSQL_TYPE_DECIMAL:
-    case MYSQL_TYPE_DOUBLE:
-    case MYSQL_TYPE_FLOAT:
-    case MYSQL_TYPE_DATETIME2:
+    case MysqlDataType.Decimal:
+    case MysqlDataType.Double:
+    case MysqlDataType.Float:
+    case MysqlDataType.DateTime2:
       return parseFloat(val);
-    case MYSQL_TYPE_NEWDECIMAL:
+    case MysqlDataType.NewDecimal:
       return val; // #42 MySQL's decimal type cannot be accurately represented by the Number.
-    case MYSQL_TYPE_TINY:
-    case MYSQL_TYPE_SHORT:
-    case MYSQL_TYPE_LONG:
-    case MYSQL_TYPE_INT24:
+    case MysqlDataType.Tiny:
+    case MysqlDataType.Short:
+    case MysqlDataType.Long:
+    case MysqlDataType.Int24:
       return parseInt(val);
-    case MYSQL_TYPE_LONGLONG:
+    case MysqlDataType.LongLong:
       if (
         Number(val) < Number.MIN_SAFE_INTEGER ||
         Number(val) > Number.MAX_SAFE_INTEGER
@@ -121,18 +124,17 @@ function convertType(field: FieldInfo, val: string): any {
       } else {
         return parseInt(val);
       }
-    case MYSQL_TYPE_VARCHAR:
-    case MYSQL_TYPE_VAR_STRING:
-    case MYSQL_TYPE_STRING:
-    case MYSQL_TYPE_TIME:
-    case MYSQL_TYPE_TIME2:
+    case MysqlDataType.VarChar:
+    case MysqlDataType.VarString:
+    case MysqlDataType.String:
+    case MysqlDataType.Time:
+    case MysqlDataType.Time2:
       return val;
-    case MYSQL_TYPE_DATE:
-    case MYSQL_TYPE_TIMESTAMP:
-    case MYSQL_TYPE_DATETIME:
-    case MYSQL_TYPE_NEWDATE:
-    case MYSQL_TYPE_TIMESTAMP2:
-    case MYSQL_TYPE_DATETIME2:
+    case MysqlDataType.Date:
+    case MysqlDataType.Timestamp:
+    case MysqlDataType.DateTime:
+    case MysqlDataType.NewDate:
+    case MysqlDataType.Timestamp2:
       return new Date(val);
     default:
       return val;

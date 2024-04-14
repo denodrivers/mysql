@@ -4,7 +4,7 @@ import {
   AuthPluginCachingSha2Password,
   AuthStatusFlags,
 } from "./caching_sha2_password.ts";
-import { PacketType } from "../constant/packet.ts";
+import { ComQueryResponsePacket } from "../constant/packet.ts";
 import { BufferReader } from "../buffer.ts";
 
 Deno.test("AuthPluginCachingSha2Password", async (t) => {
@@ -23,7 +23,11 @@ Deno.test("AuthPluginCachingSha2Password", async (t) => {
       new Uint8Array([0x00, AuthStatusFlags.FastPath]),
     );
     await authPlugin.next(
-      new PacketReader({ size: 2, no: 0 }, bodyReader, PacketType.OK_Packet),
+      new PacketReader(
+        { size: 2, no: 0 },
+        bodyReader,
+        ComQueryResponsePacket.OK_Packet,
+      ),
     );
 
     assertEquals(authPlugin.done, false);
@@ -31,7 +35,11 @@ Deno.test("AuthPluginCachingSha2Password", async (t) => {
     assertEquals(authPlugin.quickRead, true);
 
     await authPlugin.next(
-      new PacketReader({ size: 2, no: 0 }, bodyReader, PacketType.OK_Packet),
+      new PacketReader(
+        { size: 2, no: 0 },
+        bodyReader,
+        ComQueryResponsePacket.OK_Packet,
+      ),
     );
 
     assertEquals(authPlugin.done, true);
@@ -52,7 +60,11 @@ Deno.test("AuthPluginCachingSha2Password", async (t) => {
       new Uint8Array([0x00, AuthStatusFlags.FullAuth]),
     );
     await authPlugin.next(
-      new PacketReader({ size: 2, no: 0 }, bodyReader, PacketType.OK_Packet),
+      new PacketReader(
+        { size: 2, no: 0 },
+        bodyReader,
+        ComQueryResponsePacket.OK_Packet,
+      ),
     );
 
     assertEquals(authPlugin.done, false);
@@ -70,7 +82,11 @@ PQogsoytp/nSKLsTLwIDA/+/
 
     bodyReader = new BufferReader(new Uint8Array([0x00, ...encodedPublicKey]));
     await authPlugin.next(
-      new PacketReader({ size: 2, no: 0 }, bodyReader, PacketType.OK_Packet),
+      new PacketReader(
+        { size: 2, no: 0 },
+        bodyReader,
+        ComQueryResponsePacket.OK_Packet,
+      ),
     );
 
     assertEquals(authPlugin.done, false);
@@ -78,7 +94,11 @@ PQogsoytp/nSKLsTLwIDA/+/
     assertEquals(authPlugin.quickRead, false);
 
     await authPlugin.next(
-      new PacketReader({ size: 2, no: 0 }, bodyReader, PacketType.OK_Packet),
+      new PacketReader(
+        { size: 2, no: 0 },
+        bodyReader,
+        ComQueryResponsePacket.OK_Packet,
+      ),
     );
 
     assertEquals(authPlugin.done, true);

@@ -2,7 +2,7 @@ import { byteFormat } from "../util.ts";
 import { BufferReader, BufferWriter } from "../buffer.ts";
 import { MysqlWriteError } from "../utils/errors.ts";
 import { logger } from "../logger.ts";
-import { PacketType } from "../constant/packet.ts";
+import { ComQueryResponsePacket } from "../constant/packet.ts";
 
 /** @ignore */
 interface PacketHeader {
@@ -70,9 +70,13 @@ export class PacketWriter {
 export class PacketReader {
   header: PacketHeader;
   body: BufferReader;
-  type: PacketType;
+  type: ComQueryResponsePacket;
 
-  constructor(header: PacketHeader, body: BufferReader, type: PacketType) {
+  constructor(
+    header: PacketHeader,
+    body: BufferReader,
+    type: ComQueryResponsePacket,
+  ) {
     this.header = header;
     this.body = body;
     this.type = type;
@@ -121,19 +125,19 @@ export class PacketReader {
     if (nread === null) return null;
     readCount += nread;
 
-    let type: PacketType;
+    let type: ComQueryResponsePacket;
     switch (bodyReader.buffer[0]) {
-      case PacketType.OK_Packet:
-        type = PacketType.OK_Packet;
+      case ComQueryResponsePacket.OK_Packet:
+        type = ComQueryResponsePacket.OK_Packet;
         break;
-      case PacketType.ERR_Packet:
-        type = PacketType.ERR_Packet;
+      case ComQueryResponsePacket.ERR_Packet:
+        type = ComQueryResponsePacket.ERR_Packet;
         break;
-      case PacketType.EOF_Packet:
-        type = PacketType.EOF_Packet;
+      case ComQueryResponsePacket.EOF_Packet:
+        type = ComQueryResponsePacket.EOF_Packet;
         break;
       default:
-        type = PacketType.Result;
+        type = ComQueryResponsePacket.Result;
         break;
     }
 

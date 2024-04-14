@@ -20,7 +20,7 @@ import {
   parseField,
   parseRowObject,
 } from "./packets/parsers/result.ts";
-import { PacketType } from "./constant/packet.ts";
+import { ComQueryResponsePacket } from "./constant/packet.ts";
 import { AuthPluginName, AuthPlugins } from "./auth_plugins/mod.ts";
 import { parseAuthSwitch } from "./packets/parsers/authswitch.ts";
 import auth from "./auth.ts";
@@ -289,7 +289,7 @@ export class Connection {
       this.close();
       throw new MysqlReadError("Connection closed unexpectedly");
     }
-    if (packet.type === PacketType.ERR_Packet) {
+    if (packet.type === ComQueryResponsePacket.ERR_Packet) {
       packet.body.skip(1);
       const error = parseError(packet.body, this);
       throw new MysqlError(error.message);
@@ -348,13 +348,13 @@ export class Connection {
     try {
       await PacketWriter.write(this.conn, data, 0);
       let receive = await this.nextPacket();
-      if (receive.type === PacketType.OK_Packet) {
+      if (receive.type === ComQueryResponsePacket.OK_Packet) {
         receive.body.skip(1);
         return {
           affectedRows: receive.body.readEncodedLen(),
           lastInsertId: receive.body.readEncodedLen(),
         };
-      } else if (receive.type !== PacketType.Result) {
+      } else if (receive.type !== ComQueryResponsePacket.Result) {
         throw new MysqlProtocolError(receive.type.toString());
       }
       let fieldCount = receive.body.readEncodedLen();
@@ -371,7 +371,7 @@ export class Connection {
       if (!(this.capabilities & ServerCapabilities.CLIENT_DEPRECATE_EOF)) {
         // EOF(mysql < 5.7 or mariadb < 10.2)
         receive = await this.nextPacket();
-        if (receive.type !== PacketType.EOF_Packet) {
+        if (receive.type !== ComQueryResponsePacket.EOF_Packet) {
           throw new MysqlProtocolError(receive.type.toString());
         }
       }
@@ -379,7 +379,7 @@ export class Connection {
       if (!iterator) {
         while (true) {
           receive = await this.nextPacket();
-          if (receive.type === PacketType.EOF_Packet) {
+          if (receive.type === ComQueryResponsePacket.EOF_Packet) {
             break;
           } else {
             const row = parseRowObject(receive.body, fields);
@@ -403,7 +403,7 @@ export class Connection {
     const next = async () => {
       const receive = await this.nextPacket();
 
-      if (receive.type === PacketType.EOF_Packet) {
+      if (receive.type === ComQueryResponsePacket.EOF_Packet) {
         return { done: true };
       }
 
