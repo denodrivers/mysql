@@ -17,6 +17,7 @@
   },
   "imports": {
     "@halvardm/sqlx": "../deno-sqlx/mod.ts",
+    "@halvardm/sqlx/testing": "../deno-sqlx/lib/testing.ts",
     "@std/assert": "jsr:@std/assert@^0.221.0",
     "@std/async": "jsr:@std/async@^0.221.0",
     "@std/crypto": "jsr:@std/crypto@^0.221.0",

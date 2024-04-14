@@ -10,7 +10,7 @@ import {
   isMariaDB,
   registerTests,
   testWithClient,
-} from "./test.util.ts";
+} from "./lib/utils/testing.ts";
 import * as stdlog from "@std/log";
 import { configLogger } from "./mod.ts";
 import { logger } from "./lib/logger.ts";

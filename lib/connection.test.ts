@@ -2,7 +2,7 @@ import { assertEquals, assertInstanceOf } from "@std/assert";
 import { emptyDir } from "@std/fs";
 import { join } from "@std/path";
 import { MysqlConnection } from "./connection2.ts";
-import { DIR_TMP_TEST } from "../test.util.ts";
+import { DIR_TMP_TEST } from "./utils/testing.ts";
 import { buildQuery } from "./packets/builders/query.ts";
 
 Deno.test("Connection", async (t) => {
