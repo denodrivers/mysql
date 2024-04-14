@@ -23,7 +23,7 @@ import {
 import { ComQueryResponsePacket } from "./constant/packet.ts";
 import { AuthPluginName, AuthPlugins } from "./auth_plugins/mod.ts";
 import { parseAuthSwitch } from "./packets/parsers/authswitch.ts";
-import auth from "./auth.ts";
+import auth from "./utils/hash.ts";
 import { ServerCapabilities } from "./constant/capabilities.ts";
 import { buildSSLRequest } from "./packets/builders/tls.ts";
 import { logger } from "./logger.ts";

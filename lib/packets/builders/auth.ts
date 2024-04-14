@@ -1,4 +1,4 @@
-import auth from "../../auth.ts";
+import auth from "../../utils/hash.ts";
 import { BufferWriter } from "../../buffer.ts";
 import { ServerCapabilities } from "../../constant/capabilities.ts";
 import { Charset } from "../../constant/charset.ts";
