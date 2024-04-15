@@ -197,6 +197,135 @@ Deno.test("Connection", async (t) => {
       }
     });
 
+    await t.step("can parse time", async () => {
+      const data = buildQuery(`SELECT CAST("09:04:10" AS time) as time`);
+      for await (const result1 of connection.sendData(data)) {
+        assertEquals(result1, {
+          row: ["09:04:10"],
+          fields: [
+            {
+              catalog: "def",
+              decimals: 0,
+              defaultVal: "",
+              encoding: 63,
+              fieldFlag: 128,
+              fieldLen: 10,
+              fieldType: 11,
+              name: "time",
+              originName: "",
+              originTable: "",
+              schema: "",
+              table: "",
+            },
+          ],
+        });
+      }
+    });
+
+    await t.step("can parse date", async () => {
+      const data = buildQuery(
+        `SELECT CAST("2024-04-15 09:04:10" AS date) as date`,
+      );
+      for await (const result1 of connection.sendData(data)) {
+        assertEquals(result1, {
+          row: [new Date("2024-04-15T00:00:00.000Z")],
+          fields: [
+            {
+              catalog: "def",
+              decimals: 0,
+              defaultVal: "",
+              encoding: 63,
+              fieldFlag: 128,
+              fieldLen: 10,
+              fieldType: 10,
+              name: "date",
+              originName: "",
+              originTable: "",
+              schema: "",
+              table: "",
+            },
+          ],
+        });
+      }
+    });
+
+    await t.step("can parse bigint", async () => {
+      const data = buildQuery(`SELECT 9223372036854775807 as result`);
+      for await (const result1 of connection.sendData(data)) {
+        assertEquals(result1, {
+          row: [9223372036854775807n],
+          fields: [
+            {
+              catalog: "def",
+              decimals: 0,
+              defaultVal: "",
+              encoding: 63,
+              fieldFlag: 129,
+              fieldLen: 20,
+              fieldType: 8,
+              name: "result",
+              originName: "",
+              originTable: "",
+              schema: "",
+              table: "",
+            },
+          ],
+        });
+      }
+    });
+
+    await t.step("can parse decimal", async () => {
+      const data = buildQuery(
+        `SELECT 0.012345678901234567890123456789 as result`,
+      );
+      for await (const result1 of connection.sendData(data)) {
+        assertEquals(result1, {
+          row: ["0.012345678901234567890123456789"],
+          fields: [
+            {
+              catalog: "def",
+              decimals: 30,
+              defaultVal: "",
+              encoding: 63,
+              fieldFlag: 129,
+              fieldLen: 33,
+              fieldType: 246,
+              name: "result",
+              originName: "",
+              originTable: "",
+              schema: "",
+              table: "",
+            },
+          ],
+        });
+      }
+    });
+
+    await t.step("can parse empty string", async () => {
+      const data = buildQuery(`SELECT '' as result`);
+      for await (const result1 of connection.sendData(data)) {
+        assertEquals(result1, {
+          row: [""],
+          fields: [
+            {
+              catalog: "def",
+              decimals: 31,
+              defaultVal: "",
+              encoding: 33,
+              fieldFlag: 1,
+              fieldLen: 0,
+              fieldType: 253,
+              name: "result",
+              originName: "",
+              originTable: "",
+              schema: "",
+              table: "",
+            },
+          ],
+        });
+      }
+    });
+
     await t.step("can drop and create table", async () => {
       const dropTableSql = buildQuery("DROP TABLE IF EXISTS test;");
       const dropTableReturned = connection.sendData(dropTableSql);

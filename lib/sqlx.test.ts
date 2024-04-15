@@ -1,11 +1,13 @@
 import { MysqlClient } from "./client.ts";
+import { MysqlClientPool } from "./pool.ts";
 import { URL_TEST_CONNECTION } from "./utils/testing.ts";
 import { implementationTest } from "@halvardm/sqlx/testing";
 
-Deno.test("MysqlClient", async (t) => {
+Deno.test("MySQL SQLx", async (t) => {
   await implementationTest({
     t,
     Client: MysqlClient,
+    PoolClient: MysqlClientPool as any,
     connectionUrl: URL_TEST_CONNECTION,
     connectionOptions: {},
     queries: {

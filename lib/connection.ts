@@ -1,6 +1,5 @@
 import {
   MysqlConnectionError,
-  MysqlError,
   MysqlProtocolError,
   MysqlReadError,
   MysqlResponseTimeoutError,
@@ -14,7 +13,7 @@ import {
   parseHandshake,
 } from "./packets/parsers/handshake.ts";
 import {
-  ConvertTypeOptions,
+  type ConvertTypeOptions,
   type FieldInfo,
   getRowObject,
   type MysqlParameterType,
@@ -38,7 +37,6 @@ import { VERSION } from "./utils/meta.ts";
 import { resolve } from "@std/path";
 import { toCamelCase } from "@std/text";
 import { AuthPluginName } from "./auth_plugins/mod.ts";
-import type { MysqlQueryOptions } from "./client.ts";
 
 /**
  * Connection state
@@ -164,7 +162,9 @@ export class MysqlConnection
   set conn(conn: Deno.Conn | null) {
     this._conn = conn;
   }
-
+  get connected(): boolean {
+    return this.state === ConnectionState.CONNECTED;
+  }
   constructor(
     connectionUrl: string | URL,
     connectionOptions: MysqlConnectionOptions = {},
@@ -175,9 +175,6 @@ export class MysqlConnection
       connectionUrl,
       connectionOptions,
     );
-  }
-  get connected(): boolean {
-    return this.state === ConnectionState.CONNECTED;
   }
 
   async connect(): Promise<void> {

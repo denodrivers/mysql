@@ -16,10 +16,7 @@ import {
 } from "@halvardm/sqlx";
 import { MysqlConnection, type MysqlConnectionOptions } from "./connection.ts";
 import { buildQuery } from "./packets/builders/query.ts";
-import {
-  getRowObject,
-  type MysqlParameterType,
-} from "./packets/parsers/result.ts";
+import type { MysqlParameterType } from "./packets/parsers/result.ts";
 
 export interface MysqlTransactionOptions extends SqlxTransactionOptions {
   beginTransactionOptions: {
@@ -346,7 +343,7 @@ export class MysqlClient extends MysqlTransactionable implements
   > {
   readonly connectionUrl: string;
   readonly connectionOptions: MysqlConnectionOptions;
-  readonly eventTarget: EventTarget;
+  eventTarget: EventTarget;
   get connected(): boolean {
     throw new Error("Method not implemented.");
   }
