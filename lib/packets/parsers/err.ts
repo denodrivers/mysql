@@ -1,5 +1,5 @@
 import type { BufferReader } from "../../utils/buffer.ts";
-import type { Connection } from "../../connection.ts";
+import type { MysqlConnection } from "../../connection.ts";
 import { ServerCapabilities } from "../../constant/capabilities.ts";
 
 /** @ignore */
@@ -13,7 +13,7 @@ export interface ErrorPacket {
 /** @ignore */
 export function parseError(
   reader: BufferReader,
-  conn: Connection,
+  conn: MysqlConnection,
 ): ErrorPacket {
   const code = reader.readUint16();
   const packet: ErrorPacket = {

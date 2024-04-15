@@ -1,9 +1,10 @@
 import { assertEquals, assertInstanceOf } from "@std/assert";
 import { emptyDir } from "@std/fs";
 import { join } from "@std/path";
-import { MysqlConnection } from "./connection2.ts";
+import { MysqlConnection } from "./connection.ts";
 import { DIR_TMP_TEST } from "./utils/testing.ts";
 import { buildQuery } from "./packets/builders/query.ts";
+import { URL_TEST_CONNECTION } from "./utils/testing.ts";
 
 Deno.test("Connection", async (t) => {
   await emptyDir(DIR_TMP_TEST);
@@ -19,10 +20,10 @@ Deno.test("Connection", async (t) => {
   await Deno.writeTextFile(PATH_PEM_KEY, "key");
 
   await t.step("can construct", async (t) => {
-    const connection = new MysqlConnection("mysql://127.0.0.1:3306");
+    const connection = new MysqlConnection(URL_TEST_CONNECTION);
 
     assertInstanceOf(connection, MysqlConnection);
-    assertEquals(connection.connectionUrl, "mysql://127.0.0.1:3306");
+    assertEquals(connection.connectionUrl, URL_TEST_CONNECTION);
 
     await t.step("can parse connection config simple", () => {
       const url = new URL("mysql://user:pass@127.0.0.1:3306/db");
@@ -126,7 +127,7 @@ Deno.test("Connection", async (t) => {
     });
   });
 
-  const connection = new MysqlConnection("mysql://root@0.0.0.0:3306");
+  const connection = new MysqlConnection(URL_TEST_CONNECTION);
   assertEquals(connection.connected, false);
 
   await t.step("can connect and close", async () => {
@@ -144,55 +145,218 @@ Deno.test("Connection", async (t) => {
   });
 
   await t.step("can connect with using and dispose", async () => {
-    await using connection = new MysqlConnection("mysql://root@0.0.0.0:3306");
+    await using connection = new MysqlConnection(URL_TEST_CONNECTION);
     assertEquals(connection.connected, false);
     await connection.connect();
     assertEquals(connection.connected, true);
   });
 
-  await t.step("can execute", async (t) => {
-    await using connection = new MysqlConnection("mysql://root@0.0.0.0:3306");
-    await connection.connect();
-    const data = buildQuery("SELECT 1+1 AS result");
-    const result = await connection.execute(data);
-    assertEquals(result, { affectedRows: 0, lastInsertId: null });
-  });
+  // await t.step("can execute", async (t) => {
+  //   await using connection = new MysqlConnection(URL_TEST_CONNECTION);
+  //   await connection.connect();
+  //   const data = buildQuery("SELECT 1+1 AS result");
+  //   const result = await connection.execute(data);
+  //   assertEquals(result, { affectedRows: 0, lastInsertId: null });
+  // });
 
-  await t.step("can execute twice", async (t) => {
-    await using connection = new MysqlConnection("mysql://root@0.0.0.0:3306");
-    await connection.connect();
-    const data = buildQuery("SELECT 1+1 AS result;");
-    const result1 = await connection.execute(data);
-    assertEquals(result1, { affectedRows: 0, lastInsertId: null });
-    const result2 = await connection.execute(data);
-    assertEquals(result2, { affectedRows: 0, lastInsertId: null });
-  });
+  // await t.step("can execute twice", async (t) => {
+  //   await using connection = new MysqlConnection(URL_TEST_CONNECTION);
+  //   await connection.connect();
+  //   const data = buildQuery("SELECT 1+1 AS result;");
+  //   const result1 = await connection.execute(data);
+  //   assertEquals(result1, { affectedRows: 0, lastInsertId: null });
+  //   const result2 = await connection.execute(data);
+  //   assertEquals(result2, { affectedRows: 0, lastInsertId: null });
+  // });
 
-  await t.step("can sendData", async (t) => {
-    await using connection = new MysqlConnection("mysql://root@0.0.0.0:3306");
+  await t.step("can query database", async (t) => {
+    await using connection = new MysqlConnection(URL_TEST_CONNECTION);
     await connection.connect();
-    const data = buildQuery("SELECT 1+1 AS result;");
-    for await (const result1 of connection.sendData(data)) {
-      assertEquals(result1, {
-        row: [2],
-        fields: [
-          {
-            catalog: "def",
-            decimals: 0,
-            defaultVal: "",
-            encoding: 63,
-            fieldFlag: 129,
-            fieldLen: 3,
-            fieldType: 8,
-            name: "result",
-            originName: "",
-            originTable: "",
-            schema: "",
-            table: "",
-          },
-        ],
+    await t.step("can sendData", async () => {
+      const data = buildQuery("SELECT 1+1 AS result;");
+      for await (const result1 of connection.sendData(data)) {
+        assertEquals(result1, {
+          row: [2],
+          fields: [
+            {
+              catalog: "def",
+              decimals: 0,
+              defaultVal: "",
+              encoding: 63,
+              fieldFlag: 129,
+              fieldLen: 3,
+              fieldType: 8,
+              name: "result",
+              originName: "",
+              originTable: "",
+              schema: "",
+              table: "",
+            },
+          ],
+        });
+      }
+    });
+
+    await t.step("can drop and create table", async () => {
+      const dropTableSql = buildQuery("DROP TABLE IF EXISTS test;");
+      const dropTableReturned = connection.sendData(dropTableSql);
+      assertEquals(await dropTableReturned.next(), {
+        done: true,
+        value: { affectedRows: 0, lastInsertId: 0 },
       });
-    }
+      const createTableSql = buildQuery(
+        "CREATE TABLE IF NOT EXISTS test (id INT);",
+      );
+      const createTableReturned = connection.sendData(createTableSql);
+      assertEquals(await createTableReturned.next(), {
+        done: true,
+        value: { affectedRows: 0, lastInsertId: 0 },
+      });
+      const result = await Array.fromAsync(createTableReturned);
+      assertEquals(result, []);
+    });
+
+    await t.step("can insert to table", async () => {
+      const data = buildQuery("INSERT INTO test (id) VALUES (1),(2),(3);");
+      const returned = connection.sendData(data);
+      assertEquals(await returned.next(), {
+        done: true,
+        value: { affectedRows: 3, lastInsertId: 0 },
+      });
+      const result = await Array.fromAsync(returned);
+      assertEquals(result, []);
+    });
+
+    await t.step("can select from table using sendData", async () => {
+      const data = buildQuery("SELECT * FROM test;");
+      const returned = connection.sendData(data);
+      const result = await Array.fromAsync(returned);
+      assertEquals(result, [
+        {
+          fields: [
+            {
+              catalog: "def",
+              decimals: 0,
+              defaultVal: "",
+              encoding: 63,
+              fieldFlag: 0,
+              fieldLen: 11,
+              fieldType: 3,
+              name: "id",
+              originName: "id",
+              originTable: "test",
+              schema: "testdb",
+              table: "test",
+            },
+          ],
+          row: [
+            1,
+          ],
+        },
+        {
+          fields: [
+            {
+              catalog: "def",
+              decimals: 0,
+              defaultVal: "",
+              encoding: 63,
+              fieldFlag: 0,
+              fieldLen: 11,
+              fieldType: 3,
+              name: "id",
+              originName: "id",
+              originTable: "test",
+              schema: "testdb",
+              table: "test",
+            },
+          ],
+          row: [
+            2,
+          ],
+        },
+        {
+          fields: [
+            {
+              catalog: "def",
+              decimals: 0,
+              defaultVal: "",
+              encoding: 63,
+              fieldFlag: 0,
+              fieldLen: 11,
+              fieldType: 3,
+              name: "id",
+              originName: "id",
+              originTable: "test",
+              schema: "testdb",
+              table: "test",
+            },
+          ],
+          row: [
+            3,
+          ],
+        },
+      ]);
+    });
+
+    await t.step("can insert to table using executeRaw", async () => {
+      const data = buildQuery("INSERT INTO test (id) VALUES (4);");
+      const result = await connection.executeRaw(data);
+      assertEquals(result, 1);
+    });
+
+    await t.step("can select from table using executeRaw", async () => {
+      const data = buildQuery("SELECT * FROM test;");
+      const result = await connection.executeRaw(data);
+      assertEquals(result, undefined);
+    });
+
+    await t.step("can insert to table using queryManyObjectRaw", async () => {
+      const data = buildQuery("INSERT INTO test (id) VALUES (5);");
+      const result = await Array.fromAsync(connection.queryManyObjectRaw(data));
+      assertEquals(result, []);
+    });
+
+    await t.step("can select from table using queryManyObjectRaw", async () => {
+      const data = buildQuery("SELECT * FROM test;");
+      const result = await Array.fromAsync(connection.queryManyObjectRaw(data));
+      assertEquals(result, [
+        { id: 1 },
+        { id: 2 },
+        { id: 3 },
+        { id: 4 },
+        { id: 5 },
+      ]);
+    });
+
+    await t.step("can insert to table using queryManyArrayRaw", async () => {
+      const data = buildQuery("INSERT INTO test (id) VALUES (6);");
+      const result = await Array.fromAsync(connection.queryManyArrayRaw(data));
+      assertEquals(result, []);
+    });
+
+    await t.step("can select from table using queryManyArrayRaw", async () => {
+      const data = buildQuery("SELECT * FROM test;");
+      const result = await Array.fromAsync(connection.queryManyArrayRaw(data));
+      assertEquals(result, [
+        [1],
+        [2],
+        [3],
+        [4],
+        [5],
+        [6],
+      ]);
+    });
+
+    await t.step("can drop table", async () => {
+      const data = buildQuery("DROP TABLE IF EXISTS test;");
+      const returned = connection.sendData(data);
+      assertEquals(await returned.next(), {
+        done: true,
+        value: { affectedRows: 0, lastInsertId: 0 },
+      });
+      const result = await Array.fromAsync(returned);
+      assertEquals(result, []);
+    });
   });
 
   await emptyDir(DIR_TMP_TEST);

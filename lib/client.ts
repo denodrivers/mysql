@@ -1,170 +1,392 @@
 import {
-  type Connection,
-  ConnectionState,
-  type ExecuteResult,
-} from "./connection.ts";
-import { ConnectionPool, PoolConnection } from "./pool.ts";
-import { logger } from "./utils/logger.ts";
-import { MysqlError } from "./utils/errors.ts";
+  type ArrayRow,
+  type Row,
+  type SqlxConnection,
+  SqlxConnectionCloseEvent,
+  SqlxConnectionConnectEvent,
+  type SqlxConnectionEventType,
+  type SqlxPreparable,
+  type SqlxPreparedQueriable,
+  type SqlxQueriable,
+  type SqlxQueryOptions,
+  type SqlxTransactionable,
+  type SqlxTransactionOptions,
+  type SqlxTransactionQueriable,
+  VERSION,
+} from "@halvardm/sqlx";
+import { MysqlConnection, type MysqlConnectionOptions } from "./connection.ts";
+import { buildQuery } from "./packets/builders/query.ts";
+import {
+  getRowObject,
+  type MysqlParameterType,
+} from "./packets/parsers/result.ts";
+
+export interface MysqlTransactionOptions extends SqlxTransactionOptions {
+  beginTransactionOptions: {
+    withConsistentSnapshot?: boolean;
+    readWrite?: "READ WRITE" | "READ ONLY";
+  };
+  commitTransactionOptions: {
+    chain?: boolean;
+    release?: boolean;
+  };
+  rollbackTransactionOptions: {
+    chain?: boolean;
+    release?: boolean;
+    savepoint?: string;
+  };
+}
+
+export interface MysqlClientOptions extends MysqlConnectionOptions {
+}
+
+export interface MysqlQueryOptions extends SqlxQueryOptions {
+}
 
 /**
- * Client Config
+ * Prepared statement
+ *
+ * @todo implement prepared statements properly
  */
-export interface ClientConfig {
-  /** Database hostname */
-  hostname?: string;
-  /** Database UNIX domain socket path. When used, `hostname` and `port` are ignored. */
-  socketPath?: string;
-  /** Database username */
-  username?: string;
-  /** Database password */
-  password?: string;
-  /** Database port */
-  port?: number;
-  /** Database name */
-  db?: string;
-  /** Whether to display packet debugging information */
-  debug?: boolean;
-  /** Connection read timeout (default: 30 seconds) */
-  timeout?: number;
-  /** Connection pool size (default: 1) */
-  poolSize?: number;
-  /** Connection pool idle timeout in microseconds (default: 4 hours) */
-  idleTimeout?: number;
-  /** charset */
-  charset?: string;
-  /** tls config */
-  tls?: TLSConfig;
+export class MysqlPrepared
+  implements SqlxPreparedQueriable<MysqlParameterType, MysqlQueryOptions> {
+  readonly sqlxVersion = VERSION;
+  readonly queryOptions: MysqlQueryOptions;
+
+  #sql: string;
+
+  #queriable: MysqlQueriable;
+
+  constructor(
+    connection: MysqlConnection,
+    sql: string,
+    options: MysqlQueryOptions = {},
+  ) {
+    this.#queriable = new MysqlQueriable(connection);
+    this.#sql = sql;
+    this.queryOptions = options;
+  }
+
+  execute(
+    params?: MysqlParameterType[] | undefined,
+    _options?: MysqlQueryOptions | undefined,
+  ): Promise<number | undefined> {
+    return this.#queriable.execute(this.#sql, params);
+  }
+  query<T extends Row<MysqlParameterType> = Row<MysqlParameterType>>(
+    params?: MysqlParameterType[] | undefined,
+    options?: MysqlQueryOptions | undefined,
+  ): Promise<T[]> {
+    return this.#queriable.query(this.#sql, params, options);
+  }
+  queryOne<T extends Row<MysqlParameterType> = Row<MysqlParameterType>>(
+    params?: MysqlParameterType[] | undefined,
+    options?: MysqlQueryOptions | undefined,
+  ): Promise<T | undefined> {
+    return this.#queriable.queryOne(this.#sql, params, options);
+  }
+  queryMany<T extends Row<MysqlParameterType> = Row<MysqlParameterType>>(
+    params?: MysqlParameterType[] | undefined,
+    options?: MysqlQueryOptions | undefined,
+  ): AsyncIterableIterator<T> {
+    return this.#queriable.queryMany(this.#sql, params, options);
+  }
+  queryArray<
+    T extends ArrayRow<MysqlParameterType> = ArrayRow<MysqlParameterType>,
+  >(
+    params?: MysqlParameterType[] | undefined,
+    options?: MysqlQueryOptions | undefined,
+  ): Promise<T[]> {
+    return this.#queriable.queryArray(this.#sql, params, options);
+  }
+  queryOneArray<
+    T extends ArrayRow<MysqlParameterType> = ArrayRow<MysqlParameterType>,
+  >(
+    params?: MysqlParameterType[] | undefined,
+    options?: MysqlQueryOptions | undefined,
+  ): Promise<T | undefined> {
+    return this.#queriable.queryOneArray(this.#sql, params, options);
+  }
+  queryManyArray<
+    T extends ArrayRow<MysqlParameterType> = ArrayRow<MysqlParameterType>,
+  >(
+    params?: MysqlParameterType[] | undefined,
+    options?: MysqlQueryOptions | undefined,
+  ): AsyncIterableIterator<T> {
+    return this.#queriable.queryManyArray(this.#sql, params, options);
+  }
 }
 
-export enum TLSMode {
-  DISABLED = "disabled",
-  VERIFY_IDENTITY = "verify_identity",
+export class MysqlQueriable
+  implements SqlxQueriable<MysqlParameterType, MysqlQueryOptions> {
+  protected readonly connection: MysqlConnection;
+  readonly queryOptions: MysqlQueryOptions;
+  readonly sqlxVersion: string = VERSION;
+
+  constructor(
+    connection: MysqlConnection,
+    queryOptions: MysqlQueryOptions = {},
+  ) {
+    this.connection = connection;
+    this.queryOptions = queryOptions;
+  }
+
+  execute(
+    sql: string,
+    params?: MysqlParameterType[] | undefined,
+    _options?: MysqlQueryOptions | undefined,
+  ): Promise<number | undefined> {
+    const data = buildQuery(sql, params);
+    return this.connection.executeRaw(data);
+  }
+  query<T extends Row<MysqlParameterType> = Row<MysqlParameterType>>(
+    sql: string,
+    params?: MysqlParameterType[] | undefined,
+    options?: MysqlQueryOptions | undefined,
+  ): Promise<T[]> {
+    return Array.fromAsync(this.queryMany<T>(sql, params, options));
+  }
+  async queryOne<T extends Row<MysqlParameterType> = Row<MysqlParameterType>>(
+    sql: string,
+    params?: MysqlParameterType[] | undefined,
+    options?: MysqlQueryOptions | undefined,
+  ): Promise<T | undefined> {
+    const res = await this.query<T>(sql, params, options);
+    return res[0];
+  }
+  async *queryMany<T extends Row<MysqlParameterType> = Row<MysqlParameterType>>(
+    sql: string,
+    params?: MysqlParameterType[],
+    options?: MysqlQueryOptions | undefined,
+  ): AsyncGenerator<T> {
+    const data = buildQuery(sql, params);
+    for await (
+      const res of this.connection.queryManyObjectRaw<T>(data, options)
+    ) {
+      yield res;
+    }
+  }
+
+  queryArray<
+    T extends ArrayRow<MysqlParameterType> = ArrayRow<MysqlParameterType>,
+  >(
+    sql: string,
+    params?: MysqlParameterType[] | undefined,
+    options?: MysqlQueryOptions | undefined,
+  ): Promise<T[]> {
+    return Array.fromAsync(this.queryManyArray<T>(sql, params, options));
+  }
+  async queryOneArray<
+    T extends ArrayRow<MysqlParameterType> = ArrayRow<MysqlParameterType>,
+  >(
+    sql: string,
+    params?: MysqlParameterType[] | undefined,
+    options?: MysqlQueryOptions | undefined,
+  ): Promise<T | undefined> {
+    const res = await this.queryArray<T>(sql, params, options);
+    return res[0];
+  }
+  async *queryManyArray<
+    T extends ArrayRow<MysqlParameterType> = ArrayRow<MysqlParameterType>,
+  >(
+    sql: string,
+    params?: MysqlParameterType[] | undefined,
+    options?: MysqlQueryOptions | undefined,
+  ): AsyncIterableIterator<T> {
+    const data = buildQuery(sql, params);
+    for await (
+      const res of this.connection.queryManyArrayRaw<T>(data, options)
+    ) {
+      yield res;
+    }
+  }
+  sql<T extends Row<MysqlParameterType> = Row<MysqlParameterType>>(
+    strings: TemplateStringsArray,
+    ...parameters: MysqlParameterType[]
+  ): Promise<T[]> {
+    return this.query(strings.join("?"), parameters);
+  }
+  sqlArray<
+    T extends ArrayRow<MysqlParameterType> = ArrayRow<MysqlParameterType>,
+  >(
+    strings: TemplateStringsArray,
+    ...parameters: MysqlParameterType[]
+  ): Promise<T[]> {
+    return this.queryArray(strings.join("?"), parameters);
+  }
 }
+
+export class MysqlPreparable extends MysqlQueriable
+  implements
+    SqlxPreparable<MysqlParameterType, MysqlQueryOptions, MysqlPrepared> {
+  prepare(sql: string, options?: MysqlQueryOptions | undefined): MysqlPrepared {
+    return new MysqlPrepared(this.connection, sql, options);
+  }
+}
+
+export class MySqlTransaction extends MysqlPreparable
+  implements
+    SqlxTransactionQueriable<
+      MysqlParameterType,
+      MysqlQueryOptions,
+      MysqlTransactionOptions
+    > {
+  async commitTransaction(
+    options?: MysqlTransactionOptions["commitTransactionOptions"],
+  ): Promise<void> {
+    let sql = "COMMIT";
+
+    if (options?.chain === true) {
+      sql += " AND CHAIN";
+    } else if (options?.chain === false) {
+      sql += " AND NO CHAIN";
+    }
+
+    if (options?.release === true) {
+      sql += " RELEASE";
+    } else if (options?.release === false) {
+      sql += " NO RELEASE";
+    }
+    await this.execute(sql);
+  }
+  async rollbackTransaction(
+    options?: MysqlTransactionOptions["rollbackTransactionOptions"],
+  ): Promise<void> {
+    let sql = "ROLLBACK";
+
+    if (options?.savepoint) {
+      sql += ` TO ${options.savepoint}`;
+      await this.execute(sql);
+      return;
+    }
+
+    if (options?.chain === true) {
+      sql += " AND CHAIN";
+    } else if (options?.chain === false) {
+      sql += " AND NO CHAIN";
+    }
+
+    if (options?.release === true) {
+      sql += " RELEASE";
+    } else if (options?.release === false) {
+      sql += " NO RELEASE";
+    }
+
+    await this.execute(sql);
+  }
+  async createSavepoint(name: string = `\t_bm.\t`): Promise<void> {
+    await this.execute(`SAVEPOINT ${name}`);
+  }
+  async releaseSavepoint(name: string = `\t_bm.\t`): Promise<void> {
+    await this.execute(`RELEASE SAVEPOINT ${name}`);
+  }
+}
+
 /**
- * TLS Config
+ * Represents a queriable class that can be used to run transactions.
  */
-export interface TLSConfig {
-  /** mode of tls. only support disabled and verify_identity now*/
-  mode?: TLSMode;
-  /** A list of root certificates (must be PEM format) that will be used in addition to the
-   * default root certificates to verify the peer's certificate. */
-  caCerts?: string[];
-}
+export class MysqlTransactionable extends MysqlPreparable
+  implements
+    SqlxTransactionable<
+      MysqlParameterType,
+      MysqlQueryOptions,
+      MysqlTransactionOptions,
+      MySqlTransaction
+    > {
+  async beginTransaction(
+    options?: MysqlTransactionOptions["beginTransactionOptions"],
+  ): Promise<MySqlTransaction> {
+    let sql = "START TRANSACTION";
+    if (options?.withConsistentSnapshot) {
+      sql += ` WITH CONSISTENT SNAPSHOT`;
+    }
 
-/** Transaction processor */
-export interface TransactionProcessor<T> {
-  (connection: Connection): Promise<T>;
+    if (options?.readWrite) {
+      sql += ` ${options.readWrite}`;
+    }
+
+    await this.execute(sql);
+
+    return new MySqlTransaction(this.connection, this.queryOptions);
+  }
+
+  async transaction<T>(
+    fn: (t: MySqlTransaction) => Promise<T>,
+    options?: MysqlTransactionOptions,
+  ): Promise<T> {
+    const transaction = await this.beginTransaction(
+      options?.beginTransactionOptions,
+    );
+
+    try {
+      const result = await fn(transaction);
+      await transaction.commitTransaction(options?.commitTransactionOptions);
+      return result;
+    } catch (error) {
+      await transaction.rollbackTransaction(
+        options?.rollbackTransactionOptions,
+      );
+      throw error;
+    }
+  }
 }
 
 /**
  * MySQL client
  */
-export class Client {
-  config: ClientConfig = {};
-  private _pool?: ConnectionPool;
-
-  private async createConnection(): Promise<PoolConnection> {
-    let connection = new PoolConnection(this.config);
-    await connection.connect();
-    return connection;
+export class MysqlClient extends MysqlTransactionable implements
+  SqlxConnection<
+    MysqlParameterType,
+    MysqlQueryOptions,
+    MysqlPrepared,
+    MysqlTransactionOptions,
+    MySqlTransaction,
+    SqlxConnectionEventType,
+    MysqlConnectionOptions
+  > {
+  readonly connectionUrl: string;
+  readonly connectionOptions: MysqlConnectionOptions;
+  readonly eventTarget: EventTarget;
+  get connected(): boolean {
+    throw new Error("Method not implemented.");
   }
 
-  /** get pool info */
-  get pool() {
-    return this._pool?.info;
+  constructor(
+    connectionUrl: string | URL,
+    connectionOptions: MysqlClientOptions = {},
+  ) {
+    const conn = new MysqlConnection(connectionUrl, connectionOptions);
+    super(conn);
+    this.connectionUrl = conn.connectionUrl;
+    this.connectionOptions = conn.connectionOptions;
+    this.eventTarget = new EventTarget();
   }
-
-  /**
-   * connect to database
-   * @param config config for client
-   * @returns Client instance
-   */
-  async connect(config: ClientConfig): Promise<Client> {
-    this.config = {
-      hostname: "127.0.0.1",
-      username: "root",
-      port: 3306,
-      poolSize: 1,
-      timeout: 30 * 1000,
-      idleTimeout: 4 * 3600 * 1000,
-      ...config,
-    };
-    Object.freeze(this.config);
-    this._pool = new ConnectionPool(
-      this.config.poolSize || 10,
-      this.createConnection.bind(this),
-    );
-    return this;
+  async connect(): Promise<void> {
+    await this.connection.connect();
+    this.dispatchEvent(new SqlxConnectionConnectEvent());
   }
-
-  /**
-   * execute query sql
-   * @param sql query sql string
-   * @param params query params
-   */
-  async query(sql: string, params?: any[]): Promise<any> {
-    return await this.useConnection(async (connection) => {
-      return await connection.query(sql, params);
-    });
+  async close(): Promise<void> {
+    this.dispatchEvent(new SqlxConnectionCloseEvent());
+    await this.connection.close();
   }
-
-  /**
-   * execute sql
-   * @param sql sql string
-   * @param params query params
-   */
-  async execute(sql: string, params?: any[]): Promise<ExecuteResult> {
-    return await this.useConnection(async (connection) => {
-      return await connection.execute(sql, params);
-    });
+  async [Symbol.asyncDispose](): Promise<void> {
+    await this.close();
   }
-
-  async useConnection<T>(fn: (conn: Connection) => Promise<T>) {
-    if (!this._pool) {
-      throw new MysqlError("Unconnected");
-    }
-    const connection = await this._pool.pop();
-    try {
-      return await fn(connection);
-    } finally {
-      if (connection.state == ConnectionState.CLOSED) {
-        connection.removeFromPool();
-      } else {
-        connection.returnToPool();
-      }
-    }
+  addEventListener(
+    type: SqlxConnectionEventType,
+    listener: EventListenerOrEventListenerObject | null,
+    options?: boolean | AddEventListenerOptions,
+  ): void {
+    this.eventTarget.addEventListener(type, listener, options);
   }
-
-  /**
-   * Execute a transaction process, and the transaction successfully
-   * returns the return value of the transaction process
-   * @param processor transation processor
-   */
-  async transaction<T = any>(processor: TransactionProcessor<T>): Promise<T> {
-    return await this.useConnection(async (connection) => {
-      try {
-        await connection.execute("BEGIN");
-        const result = await processor(connection);
-        await connection.execute("COMMIT");
-        return result;
-      } catch (error) {
-        if (connection.state == ConnectionState.CONNECTED) {
-          logger().info(`ROLLBACK: ${error.message}`);
-          await connection.execute("ROLLBACK");
-        }
-        throw error;
-      }
-    });
+  removeEventListener(
+    type: SqlxConnectionEventType,
+    callback: EventListenerOrEventListenerObject | null,
+    options?: boolean | EventListenerOptions,
+  ): void {
+    this.eventTarget.removeEventListener(type, callback, options);
   }
-
-  /**
-   * close connection
-   */
-  async close() {
-    if (this._pool) {
-      this._pool.close();
-      this._pool = undefined;
-    }
+  dispatchEvent(event: Event): boolean {
+    return this.eventTarget.dispatchEvent(event);
   }
 }

@@ -1,9 +1,14 @@
+import type { MysqlParameterType } from "../packets/parsers/result.ts";
+
 /**
  * Replaces parameters in a SQL query with the given values.
  *
  * Taken from https://github.com/manyuanrong/sql-builder/blob/master/util.ts
  */
-export function replaceParams(sql: string, params: any | any[]): string {
+export function replaceParams(
+  sql: string,
+  params: MysqlParameterType[],
+): string {
   if (!params) return sql;
   let paramIndex = 0;
   sql = sql.replace(
@@ -46,9 +51,10 @@ export function replaceParams(sql: string, params: any | any[]): string {
         // deno-lint-ignore no-fallthrough
         case "object":
           if (val instanceof Date) return `"${formatDate(val)}"`;
-          if (val instanceof Array) {
+          if ((val as unknown) instanceof Array) {
             return `(${
-              val.map((item) => replaceParams("?", [item])).join(",")
+              (val as Array<string>).map((item) => replaceParams("?", [item]))
+                .join(",")
             })`;
           }
         case "string":
@@ -58,7 +64,7 @@ export function replaceParams(sql: string, params: any | any[]): string {
         case "number":
         case "boolean":
         default:
-          return val;
+          return val.toString();
       }
     },
   );
@@ -69,6 +75,7 @@ export function replaceParams(sql: string, params: any | any[]): string {
  * Formats date to a 'YYYY-MM-DD HH:MM:SS.SSS' string.
  */
 function formatDate(date: Date) {
+  date.toISOString();
   const year = date.getFullYear();
   const month = (date.getMonth() + 1).toString().padStart(2, "0");
   const days = date

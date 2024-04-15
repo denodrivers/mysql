@@ -1,6 +1,11 @@
 import type { BufferReader } from "../../utils/buffer.ts";
 import { MysqlDataType } from "../../constant/mysql_types.ts";
-import type { ArrayRow, Row, SqlxParameterType } from "@halvardm/sqlx";
+import type {
+  ArrayRow,
+  Row,
+  SqlxParameterType,
+  SqlxQueryOptions,
+} from "@halvardm/sqlx";
 
 export type MysqlParameterType = SqlxParameterType<
   string | number | bigint | Date | null
@@ -23,6 +28,8 @@ export interface FieldInfo {
   decimals: number;
   defaultVal: string;
 }
+
+export type ConvertTypeOptions = Pick<SqlxQueryOptions, "transformType">;
 
 /**
  * Parses the field
@@ -64,11 +71,12 @@ export function parseField(reader: BufferReader): FieldInfo {
 export function parseRowArray(
   reader: BufferReader,
   fields: FieldInfo[],
+  options?: ConvertTypeOptions,
 ): ArrayRow<MysqlParameterType> {
   const row: MysqlParameterType[] = [];
   for (const field of fields) {
     const val = reader.readLenCodeString();
-    const parsedVal = val === null ? null : convertType(field, val);
+    const parsedVal = val === null ? null : convertType(field, val, options);
     row.push(parsedVal);
   }
   return row;
@@ -100,7 +108,15 @@ export function getRowObject(
 /**
  * Converts the value to the correct type
  */
-function convertType(field: FieldInfo, val: string): MysqlParameterType {
+function convertType(
+  field: FieldInfo,
+  val: string,
+  options?: ConvertTypeOptions,
+): MysqlParameterType {
+  if (options?.transformType) {
+    // deno-lint-ignore no-explicit-any
+    return options.transformType(val) as any;
+  }
   const { fieldType } = field;
   switch (fieldType) {
     case MysqlDataType.Decimal:
