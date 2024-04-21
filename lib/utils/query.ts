@@ -58,7 +58,7 @@ export function replaceParams(
             })`;
           }
         case "string":
-          return `"${escapeString(val)}"`;
+          return `"${escapeString(val as string)}"`;
         case "undefined":
           return "NULL";
         case "number":

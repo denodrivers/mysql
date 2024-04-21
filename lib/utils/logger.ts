@@ -1,4 +1,4 @@
-import { getLogger } from "@std/log";
+import { getLogger, type Logger } from "@std/log";
 import { MODULE_NAME } from "./meta.ts";
 
 /**
@@ -7,6 +7,6 @@ import { MODULE_NAME } from "./meta.ts";
  *
  * @see {@link https://deno.land/std/log/mod.ts}
  */
-export function logger() {
+export function logger(): Logger {
   return getLogger(MODULE_NAME);
 }

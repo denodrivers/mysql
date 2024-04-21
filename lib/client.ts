@@ -53,7 +53,7 @@ export class MysqlQueriable extends SqlxBase implements
   readonly queryOptions: MysqlQueryOptions;
 
   get connected(): boolean {
-    throw new Error("Method not implemented.");
+    return this.connection.connected;
   }
 
   constructor(
@@ -181,9 +181,9 @@ export class MysqlPrepared extends SqlxBase implements
   ) {
     super();
     this.connection = connection;
-    this.#queriable = new MysqlQueriable(connection);
     this.sql = sql;
     this.queryOptions = options;
+    this.#queriable = new MysqlQueriable(connection, this.queryOptions);
   }
 
   execute(

@@ -1,4 +1,4 @@
-import { SqlxError } from "@halvardm/sqlx";
+import { isSqlxError, SqlxError } from "@halvardm/sqlx";
 
 export class MysqlError extends SqlxError {
   constructor(msg: string) {
@@ -46,5 +46,5 @@ export class MysqlTransactionError extends MysqlError {
  * Check if an error is a MysqlError
  */
 export function isMysqlError(err: unknown): err is MysqlError {
-  return err instanceof MysqlError;
+  return isSqlxError(err) && err instanceof MysqlError;
 }
