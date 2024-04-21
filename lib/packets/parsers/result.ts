@@ -2,7 +2,17 @@ import type { BufferReader } from "../../utils/buffer.ts";
 import { MysqlDataType } from "../../constant/mysql_types.ts";
 import type { ArrayRow, Row, SqlxQueryOptions } from "@halvardm/sqlx";
 
-export type MysqlParameterType = string | number | bigint | Date | null;
+export type MysqlParameterType =
+  | null
+  | string
+  | number
+  | boolean
+  | bigint
+  | Date
+  // deno-lint-ignore no-explicit-any
+  | Array<any>
+  | object
+  | undefined;
 
 /**
  * Field information
