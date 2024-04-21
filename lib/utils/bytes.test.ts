@@ -140,4 +140,9 @@ Deno.test("hexdump", async (t) => {
     const result = hexdump(new DataView(buffer8Compatible.buffer));
     assertEquals(result, buffer8Result);
   });
+
+  await t.step("ArrayBuffer", () => {
+    const result = hexdump(buffer8Compatible.buffer);
+    assertEquals(result, buffer8Result);
+  });
 });

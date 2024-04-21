@@ -10,13 +10,19 @@
  * // 00000020  68 65 20 6c 61 7a 79 20  64 6f 67 2e              |he lazy dog.|
  * ```
  */
-export function hexdump(bufferView: ArrayBufferView): string {
-  const bytes = new Uint8Array(bufferView.buffer);
+export function hexdump(bufferView: ArrayBufferView | ArrayBuffer): string {
+  let bytes: Uint8Array;
+  if (ArrayBuffer.isView(bufferView)) {
+    bytes = new Uint8Array(bufferView.buffer);
+  } else {
+    bytes = new Uint8Array(bufferView);
+  }
+
   const lines = [];
 
   for (let i = 0; i < bytes.length; i += 16) {
     const address = i.toString(16).padStart(8, "0");
-    const block = bytes.slice(i, i + 16); // cut buffer into blocks of 16
+    const block = bytes.slice(i, i + 16);
     const hexArray = [];
     const asciiArray = [];
     let padding = "";

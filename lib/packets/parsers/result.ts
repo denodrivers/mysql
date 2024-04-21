@@ -1,15 +1,8 @@
 import type { BufferReader } from "../../utils/buffer.ts";
 import { MysqlDataType } from "../../constant/mysql_types.ts";
-import type {
-  ArrayRow,
-  Row,
-  SqlxParameterType,
-  SqlxQueryOptions,
-} from "@halvardm/sqlx";
+import type { ArrayRow, Row, SqlxQueryOptions } from "@halvardm/sqlx";
 
-export type MysqlParameterType = SqlxParameterType<
-  string | number | bigint | Date | null
->;
+export type MysqlParameterType = string | number | bigint | Date | null;
 
 /**
  * Field information

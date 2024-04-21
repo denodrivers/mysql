@@ -30,13 +30,14 @@ import { logger } from "./utils/logger.ts";
 import type {
   ArrayRow,
   Row,
-  SqlxConnectable,
+  SqlxConnection,
   SqlxConnectionOptions,
 } from "@halvardm/sqlx";
 import { VERSION } from "./utils/meta.ts";
 import { resolve } from "@std/path";
 import { toCamelCase } from "@std/text";
 import { AuthPluginName } from "./auth_plugins/mod.ts";
+import type { MysqlEventTarget } from "./utils/events.ts";
 
 /**
  * Connection state
@@ -131,8 +132,11 @@ export interface MysqlConnectionOptions extends SqlxConnectionOptions {
 }
 
 /** Connection for mysql */
-export class MysqlConnection
-  implements SqlxConnectable<MysqlConnectionOptions> {
+export class MysqlConnection implements
+  SqlxConnection<
+    MysqlEventTarget,
+    MysqlConnectionOptions
+  > {
   state: ConnectionState = ConnectionState.CONNECTING;
   capabilities: number = 0;
   serverVersion: string = "";
@@ -144,6 +148,7 @@ export class MysqlConnection
   readonly connectionOptions: MysqlConnectionOptions;
   readonly config: ConnectionConfig;
   readonly sqlxVersion: string = VERSION;
+  eventTarget: MysqlEventTarget;
 
   get conn(): Deno.Conn {
     if (!this._conn) {
@@ -175,6 +180,7 @@ export class MysqlConnection
       connectionUrl,
       connectionOptions,
     );
+    this.eventTarget = new EventTarget();
   }
 
   async connect(): Promise<void> {
@@ -231,7 +237,7 @@ export class MysqlConnection
             tlsData,
             ++handshakeSequenceNumber,
           );
-          this.conn = await Deno.startTls(this.conn, {
+          this.conn = await Deno.startTls(this.conn as Deno.TcpConn, {
             hostname: this.config.hostname,
             caCerts: this.config.tls?.caCerts,
           });

@@ -36,6 +36,12 @@ export class MysqlProtocolError extends MysqlError {
   }
 }
 
+export class MysqlTransactionError extends MysqlError {
+  constructor(msg: string) {
+    super(msg);
+  }
+}
+
 /**
  * Check if an error is a MysqlError
  */

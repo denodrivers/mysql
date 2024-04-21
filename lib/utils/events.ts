@@ -1,71 +1,50 @@
 import {
-  type SqlxConnectionEventInit,
+  type SqlxConnectableBase,
+  SqlxConnectionCloseEvent,
+  SqlxConnectionConnectEvent,
+  type SqlxEventInit,
+  SqlxEventTarget,
+  type SqlxEventType,
   SqlxPoolConnectionAcquireEvent,
   SqlxPoolConnectionDestroyEvent,
   SqlxPoolConnectionReleaseEvent,
 } from "@halvardm/sqlx";
-import type { MysqlParameterType } from "../packets/parsers/result.ts";
-import type {
-  MysqlPrepared,
-  MysqlQueryOptions,
-  MySqlTransaction,
-  MysqlTransactionOptions,
-} from "../client.ts";
-import type { MysqlPoolClient } from "../pool.ts";
+import type { MysqlConnectionOptions } from "../connection.ts";
+import type { MysqlConnection } from "../connection.ts";
+
+export class MysqlEventTarget extends SqlxEventTarget<
+  MysqlConnectionOptions,
+  MysqlConnection,
+  SqlxEventType,
+  MysqlClientConnectionEventInit,
+  MysqlEvents
+> {
+}
+
+export type MysqlClientConnectionEventInit = SqlxEventInit<
+  SqlxConnectableBase<MysqlConnection>
+>;
+
+export class MysqlConnectionConnectEvent
+  extends SqlxConnectionConnectEvent<MysqlClientConnectionEventInit> {}
+export class MysqlConnectionCloseEvent
+  extends SqlxConnectionCloseEvent<MysqlClientConnectionEventInit> {}
 
 export class MysqlPoolConnectionAcquireEvent
-  extends SqlxPoolConnectionAcquireEvent<
-    MysqlParameterType,
-    MysqlQueryOptions,
-    MysqlPrepared,
-    MysqlTransactionOptions,
-    MySqlTransaction,
-    MysqlPoolClient,
-    SqlxConnectionEventInit<
-      MysqlParameterType,
-      MysqlQueryOptions,
-      MysqlPrepared,
-      MysqlTransactionOptions,
-      MySqlTransaction,
-      MysqlPoolClient
-    >
-  > {
+  extends SqlxPoolConnectionAcquireEvent<MysqlClientConnectionEventInit> {
 }
 
 export class MysqlPoolConnectionReleaseEvent
-  extends SqlxPoolConnectionReleaseEvent<
-    MysqlParameterType,
-    MysqlQueryOptions,
-    MysqlPrepared,
-    MysqlTransactionOptions,
-    MySqlTransaction,
-    MysqlPoolClient,
-    SqlxConnectionEventInit<
-      MysqlParameterType,
-      MysqlQueryOptions,
-      MysqlPrepared,
-      MysqlTransactionOptions,
-      MySqlTransaction,
-      MysqlPoolClient
-    >
-  > {
+  extends SqlxPoolConnectionReleaseEvent<MysqlClientConnectionEventInit> {
 }
 
 export class MysqlPoolConnectionDestroyEvent
-  extends SqlxPoolConnectionDestroyEvent<
-    MysqlParameterType,
-    MysqlQueryOptions,
-    MysqlPrepared,
-    MysqlTransactionOptions,
-    MySqlTransaction,
-    MysqlPoolClient,
-    SqlxConnectionEventInit<
-      MysqlParameterType,
-      MysqlQueryOptions,
-      MysqlPrepared,
-      MysqlTransactionOptions,
-      MySqlTransaction,
-      MysqlPoolClient
-    >
-  > {
+  extends SqlxPoolConnectionDestroyEvent<MysqlClientConnectionEventInit> {
 }
+
+export type MysqlEvents =
+  | MysqlConnectionConnectEvent
+  | MysqlConnectionCloseEvent
+  | MysqlPoolConnectionAcquireEvent
+  | MysqlPoolConnectionReleaseEvent
+  | MysqlPoolConnectionDestroyEvent;

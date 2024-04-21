@@ -1,4 +1,4 @@
-import { ConsoleHandler, getLogger, setup } from "@std/log";
+import { getLogger } from "@std/log";
 import { MODULE_NAME } from "./meta.ts";
 
 /**
@@ -10,20 +10,3 @@ import { MODULE_NAME } from "./meta.ts";
 export function logger() {
   return getLogger(MODULE_NAME);
 }
-
-setup({
-  handlers: {
-    console: new ConsoleHandler("DEBUG"),
-  },
-  loggers: {
-    // configure default logger available via short-hand methods above
-    default: {
-      level: "INFO",
-      handlers: ["console"],
-    },
-    [MODULE_NAME]: {
-      level: "INFO",
-      handlers: ["console"],
-    },
-  },
-});

@@ -6,8 +6,22 @@ services:
       - 3306:3306
     environment:
       MYSQL_ALLOW_EMPTY_PASSWORD: true
+      MYSQL_DATABASE: testdb
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "--user", "root"]
+      interval: 3s
+      timeout: 3s
+      retries: 10
+  mariadb:
+    image: mariadb
+    restart: always
+    ports:
+      - 3307:3306
+    environment:
+      MARIADB_ALLOW_EMPTY_ROOT_PASSWORD: true
+      MARIADB_DATABASE: testdb
+    healthcheck:
+      test: ["CMD", "mariadb-admin", "ping", "-h", "127.0.0.1"]
       interval: 3s
       timeout: 3s
       retries: 10
