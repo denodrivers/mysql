@@ -10,6 +10,7 @@
     "type:check": "deno check mod.ts",
     "doc:check": "deno doc --lint src",
     "test": "deno task db:restart && deno test -A; deno task db:stop",
+    "test:ga": "deno task db:start && deno test -A && deno task db:stop",
     "db:restart": "deno task db:stop && deno task db:start",
     "db:start": "docker compose up -d --remove-orphans --wait && sleep 2",
     "db:stop": "docker compose down --remove-orphans --volumes"
@@ -27,12 +28,7 @@
     "@std/path": "jsr:@std/path@^0.222.1",
     "@std/semver": "jsr:@std/semver@^0.220.1",
     "@std/testing": "jsr:@std/testing@^0.221.0",
-    "@std/text": "jsr:@std/text@^0.222.1"
-  },
-  "lint": {
-    "exclude": ["vendor"]
-  },
-  "fmt": {
-    "exclude": ["vendor"]
+    "@std/text": "jsr:@std/text@^0.222.1",
+    "@std/yaml": "jsr:@std/yaml@^0.223.0"
   }
 }

@@ -5,6 +5,7 @@ import { MysqlConnection } from "./connection.ts";
 import { DIR_TMP_TEST } from "./utils/testing.ts";
 import { buildQuery } from "./packets/builders/query.ts";
 import { URL_TEST_CONNECTION } from "./utils/testing.ts";
+import { connectionConstructorTest } from "@halvardm/sqlx/testing";
 
 Deno.test("Connection", async (t) => {
   await emptyDir(DIR_TMP_TEST);
@@ -125,49 +126,16 @@ Deno.test("Connection", async (t) => {
         },
       });
     });
-  });
 
-  const connection = new MysqlConnection(URL_TEST_CONNECTION);
-  assertEquals(connection.connected, false);
-
-  await t.step("can connect and close", async () => {
-    await connection.connect();
-    assertEquals(connection.connected, true);
     await connection.close();
-    assertEquals(connection.connected, false);
   });
 
-  await t.step("can reconnect", async () => {
-    await connection.connect();
-    assertEquals(connection.connected, true);
-    await connection.close();
-    assertEquals(connection.connected, false);
+  await connectionConstructorTest({
+    t,
+    Connection: MysqlConnection,
+    connectionUrl: URL_TEST_CONNECTION,
+    connectionOptions: {},
   });
-
-  await t.step("can connect with using and dispose", async () => {
-    await using connection = new MysqlConnection(URL_TEST_CONNECTION);
-    assertEquals(connection.connected, false);
-    await connection.connect();
-    assertEquals(connection.connected, true);
-  });
-
-  // await t.step("can execute", async (t) => {
-  //   await using connection = new MysqlConnection(URL_TEST_CONNECTION);
-  //   await connection.connect();
-  //   const data = buildQuery("SELECT 1+1 AS result");
-  //   const result = await connection.execute(data);
-  //   assertEquals(result, { affectedRows: 0, lastInsertId: null });
-  // });
-
-  // await t.step("can execute twice", async (t) => {
-  //   await using connection = new MysqlConnection(URL_TEST_CONNECTION);
-  //   await connection.connect();
-  //   const data = buildQuery("SELECT 1+1 AS result;");
-  //   const result1 = await connection.execute(data);
-  //   assertEquals(result1, { affectedRows: 0, lastInsertId: null });
-  //   const result2 = await connection.execute(data);
-  //   assertEquals(result2, { affectedRows: 0, lastInsertId: null });
-  // });
 
   await t.step("can query database", async (t) => {
     await using connection = new MysqlConnection(URL_TEST_CONNECTION);

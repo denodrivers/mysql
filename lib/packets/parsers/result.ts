@@ -32,8 +32,6 @@ export interface FieldInfo {
   defaultVal: string;
 }
 
-export type ConvertTypeOptions = Pick<SqlxQueryOptions, "transformType">;
-
 /**
  * Parses the field
  */
@@ -74,7 +72,7 @@ export function parseField(reader: BufferReader): FieldInfo {
 export function parseRowArray(
   reader: BufferReader,
   fields: FieldInfo[],
-  options?: ConvertTypeOptions,
+  options?: SqlxQueryOptions,
 ): ArrayRow<MysqlParameterType> {
   const row: MysqlParameterType[] = [];
   for (const field of fields) {
@@ -114,11 +112,11 @@ export function getRowObject(
 function convertType(
   field: FieldInfo,
   val: string,
-  options?: ConvertTypeOptions,
+  options?: SqlxQueryOptions,
 ): MysqlParameterType {
-  if (options?.transformType) {
+  if (options?.transformOutput) {
     // deno-lint-ignore no-explicit-any
-    return options.transformType(val) as any;
+    return options.transformOutput(val) as any;
   }
   const { fieldType } = field;
   switch (fieldType) {

@@ -5,4 +5,5 @@ mysql.log
 docs
 .DS_Store
 .idea
-
+dbtmp
+tmp_test

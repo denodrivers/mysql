@@ -1,50 +1,74 @@
 import {
-  type SqlxConnectableBase,
-  SqlxConnectionCloseEvent,
-  SqlxConnectionConnectEvent,
-  type SqlxEventInit,
+  type SqlxClientEventType,
+  SqlxConnectableCloseEvent,
+  SqlxConnectableConnectEvent,
+  type SqlxConnectableEventInit,
   SqlxEventTarget,
-  type SqlxEventType,
-  SqlxPoolConnectionAcquireEvent,
-  SqlxPoolConnectionDestroyEvent,
-  SqlxPoolConnectionReleaseEvent,
+  SqlxPoolConnectableAcquireEvent,
+  SqlxPoolConnectableDestroyEvent,
+  SqlxPoolConnectableReleaseEvent,
+  type SqlxPoolConnectionEventType,
 } from "@halvardm/sqlx";
 import type { MysqlConnectionOptions } from "../connection.ts";
 import type { MysqlConnection } from "../connection.ts";
+import type { MysqlClient } from "../client.ts";
+import type { MysqlPoolClient } from "../pool.ts";
 
-export class MysqlEventTarget extends SqlxEventTarget<
+export class MysqlClientEventTarget extends SqlxEventTarget<
   MysqlConnectionOptions,
   MysqlConnection,
-  SqlxEventType,
-  MysqlClientConnectionEventInit,
-  MysqlEvents
+  SqlxClientEventType,
+  MysqlClientEventInit,
+  MysqlClientEvents
+> {
+}
+export class MysqlPoolClientEventTarget extends SqlxEventTarget<
+  MysqlConnectionOptions,
+  MysqlConnection,
+  SqlxPoolConnectionEventType,
+  MysqlPoolEventInit,
+  MysqlPoolEvents
 > {
 }
 
-export type MysqlClientConnectionEventInit = SqlxEventInit<
-  SqlxConnectableBase<MysqlConnection>
+export type MysqlClientEventInit = SqlxConnectableEventInit<
+  MysqlClient
 >;
 
-export class MysqlConnectionConnectEvent
-  extends SqlxConnectionConnectEvent<MysqlClientConnectionEventInit> {}
-export class MysqlConnectionCloseEvent
-  extends SqlxConnectionCloseEvent<MysqlClientConnectionEventInit> {}
+export type MysqlPoolEventInit = SqlxConnectableEventInit<
+  MysqlPoolClient
+>;
 
-export class MysqlPoolConnectionAcquireEvent
-  extends SqlxPoolConnectionAcquireEvent<MysqlClientConnectionEventInit> {
+export class MysqlClientConnectEvent
+  extends SqlxConnectableConnectEvent<MysqlClientEventInit> {}
+
+export class MysqlClientCloseEvent
+  extends SqlxConnectableCloseEvent<MysqlClientEventInit> {}
+export class MysqlPoolConnectEvent
+  extends SqlxConnectableConnectEvent<MysqlPoolEventInit> {}
+
+export class MysqlPoolCloseEvent
+  extends SqlxConnectableCloseEvent<MysqlPoolEventInit> {}
+
+export class MysqlPoolAcquireEvent
+  extends SqlxPoolConnectableAcquireEvent<MysqlPoolEventInit> {
 }
 
-export class MysqlPoolConnectionReleaseEvent
-  extends SqlxPoolConnectionReleaseEvent<MysqlClientConnectionEventInit> {
+export class MysqlPoolReleaseEvent
+  extends SqlxPoolConnectableReleaseEvent<MysqlPoolEventInit> {
 }
 
-export class MysqlPoolConnectionDestroyEvent
-  extends SqlxPoolConnectionDestroyEvent<MysqlClientConnectionEventInit> {
+export class MysqlPoolDestroyEvent
+  extends SqlxPoolConnectableDestroyEvent<MysqlPoolEventInit> {
 }
 
-export type MysqlEvents =
-  | MysqlConnectionConnectEvent
-  | MysqlConnectionCloseEvent
-  | MysqlPoolConnectionAcquireEvent
-  | MysqlPoolConnectionReleaseEvent
-  | MysqlPoolConnectionDestroyEvent;
+export type MysqlClientEvents =
+  | MysqlClientConnectEvent
+  | MysqlClientCloseEvent;
+
+export type MysqlPoolEvents =
+  | MysqlClientConnectEvent
+  | MysqlClientCloseEvent
+  | MysqlPoolAcquireEvent
+  | MysqlPoolReleaseEvent
+  | MysqlPoolDestroyEvent;

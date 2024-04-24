@@ -2,7 +2,6 @@ import {
   SqlxBase,
   type SqlxClientPool,
   type SqlxClientPoolOptions,
-  type SqlxConnectionOptions,
   SqlxDeferredStack,
   SqlxError,
   type SqlxPoolClient,
@@ -13,18 +12,18 @@ import {
   type MySqlTransaction,
   MysqlTransactionable,
   type MysqlTransactionOptions,
-} from "./client.ts";
+} from "./sqlx.ts";
 import { MysqlConnection, type MysqlConnectionOptions } from "./connection.ts";
 import type { MysqlParameterType } from "./packets/parsers/result.ts";
 import {
-  MysqlConnectionCloseEvent,
-  MysqlConnectionConnectEvent,
-  MysqlPoolConnectionAcquireEvent,
-  MysqlPoolConnectionDestroyEvent,
-  MysqlPoolConnectionReleaseEvent,
+  MysqlPoolAcquireEvent,
+  MysqlPoolCloseEvent,
+  MysqlPoolConnectEvent,
+  MysqlPoolDestroyEvent,
+  MysqlPoolReleaseEvent,
 } from "./utils/events.ts";
 import { logger } from "./utils/logger.ts";
-import { MysqlEventTarget } from "./utils/events.ts";
+import { MysqlClientEventTarget } from "./utils/events.ts";
 
 export interface MysqlClientPoolOptions
   extends MysqlConnectionOptions, SqlxClientPoolOptions {
@@ -33,7 +32,6 @@ export interface MysqlClientPoolOptions
 export class MysqlPoolClient extends MysqlTransactionable
   implements
     SqlxPoolClient<
-      MysqlEventTarget,
       MysqlConnectionOptions,
       MysqlConnection,
       MysqlParameterType,
@@ -57,7 +55,6 @@ export class MysqlPoolClient extends MysqlTransactionable
 
 export class MysqlClientPool extends SqlxBase implements
   SqlxClientPool<
-    MysqlEventTarget,
     MysqlConnectionOptions,
     MysqlConnection,
     MysqlParameterType,
@@ -69,7 +66,7 @@ export class MysqlClientPool extends SqlxBase implements
     SqlxDeferredStack<MysqlPoolClient>
   > {
   readonly connectionUrl: string;
-  readonly connectionOptions: SqlxConnectionOptions;
+  readonly connectionOptions: MysqlClientPoolOptions;
   readonly eventTarget: EventTarget;
   readonly deferredStack: SqlxDeferredStack<MysqlPoolClient>;
   readonly queryOptions: MysqlQueryOptions;
@@ -88,7 +85,7 @@ export class MysqlClientPool extends SqlxBase implements
     this.connectionUrl = connectionUrl.toString();
     this.connectionOptions = connectionOptions;
     this.queryOptions = connectionOptions;
-    this.eventTarget = new MysqlEventTarget();
+    this.eventTarget = new MysqlClientEventTarget();
     this.deferredStack = new SqlxDeferredStack<MysqlPoolClient>(
       connectionOptions,
     );
@@ -109,7 +106,7 @@ export class MysqlClientPool extends SqlxBase implements
       if (!this.connectionOptions.lazyInitialization) {
         await client.connection.connect();
         this.eventTarget.dispatchEvent(
-          new MysqlConnectionConnectEvent({ connectable: client }),
+          new MysqlPoolConnectEvent({ connectable: client }),
         );
       }
 
@@ -124,7 +121,7 @@ export class MysqlClientPool extends SqlxBase implements
 
     for (const client of this.deferredStack.elements) {
       this.eventTarget.dispatchEvent(
-        new MysqlConnectionCloseEvent({ connectable: client }),
+        new MysqlPoolCloseEvent({ connectable: client }),
       );
       await client.connection.close();
     }
@@ -134,14 +131,14 @@ export class MysqlClientPool extends SqlxBase implements
     const client = await this.deferredStack.pop();
 
     this.eventTarget.dispatchEvent(
-      new MysqlPoolConnectionAcquireEvent({ connectable: client }),
+      new MysqlPoolAcquireEvent({ connectable: client }),
     );
     return client;
   }
 
   async release(client: MysqlPoolClient): Promise<void> {
     this.eventTarget.dispatchEvent(
-      new MysqlPoolConnectionReleaseEvent({ connectable: client }),
+      new MysqlPoolReleaseEvent({ connectable: client }),
     );
     try {
       this.deferredStack.push(client);
@@ -158,7 +155,7 @@ export class MysqlClientPool extends SqlxBase implements
 
   async destroy(client: MysqlPoolClient): Promise<void> {
     this.eventTarget.dispatchEvent(
-      new MysqlPoolConnectionDestroyEvent({ connectable: client }),
+      new MysqlPoolDestroyEvent({ connectable: client }),
     );
     await client.connection.close();
   }

@@ -13,7 +13,6 @@ import {
   parseHandshake,
 } from "./packets/parsers/handshake.ts";
 import {
-  type ConvertTypeOptions,
   type FieldInfo,
   getRowObject,
   type MysqlParameterType,
@@ -27,17 +26,17 @@ import auth from "./utils/hash.ts";
 import { ServerCapabilities } from "./constant/capabilities.ts";
 import { buildSSLRequest } from "./packets/builders/tls.ts";
 import { logger } from "./utils/logger.ts";
-import type {
-  ArrayRow,
-  Row,
-  SqlxConnection,
-  SqlxConnectionOptions,
+import {
+  type ArrayRow,
+  type Row,
+  SqlxBase,
+  type SqlxConnection,
+  type SqlxConnectionOptions,
+  type SqlxQueryOptions,
 } from "@halvardm/sqlx";
-import { VERSION } from "./utils/meta.ts";
 import { resolve } from "@std/path";
 import { toCamelCase } from "@std/text";
 import { AuthPluginName } from "./auth_plugins/mod.ts";
-import type { MysqlEventTarget } from "./utils/events.ts";
 
 /**
  * Connection state
@@ -129,12 +128,12 @@ export interface ConnectionConfig {
 }
 
 export interface MysqlConnectionOptions extends SqlxConnectionOptions {
+  tls?: Partial<TlsOptions>;
 }
 
 /** Connection for mysql */
-export class MysqlConnection implements
+export class MysqlConnection extends SqlxBase implements
   SqlxConnection<
-    MysqlEventTarget,
     MysqlConnectionOptions
   > {
   state: ConnectionState = ConnectionState.CONNECTING;
@@ -147,8 +146,6 @@ export class MysqlConnection implements
   readonly connectionUrl: string;
   readonly connectionOptions: MysqlConnectionOptions;
   readonly config: ConnectionConfig;
-  readonly sqlxVersion: string = VERSION;
-  eventTarget: MysqlEventTarget;
 
   get conn(): Deno.Conn {
     if (!this._conn) {
@@ -174,13 +171,13 @@ export class MysqlConnection implements
     connectionUrl: string | URL,
     connectionOptions: MysqlConnectionOptions = {},
   ) {
+    super();
     this.connectionUrl = connectionUrl.toString().split("?")[0];
     this.connectionOptions = connectionOptions;
     this.config = this.#parseConnectionConfig(
       connectionUrl,
       connectionOptions,
     );
-    this.eventTarget = new EventTarget();
   }
 
   async connect(): Promise<void> {
@@ -193,7 +190,9 @@ export class MysqlConnection implements
       throw new Error("unsupported tls mode");
     }
 
-    logger().info(`connecting ${this.connectionUrl}`);
+    logger().info(
+      `connecting ${this.connectionUrl},${JSON.stringify(this.config)}`,
+    );
 
     if (this.config.socket) {
       this.conn = await Deno.connect({
@@ -524,7 +523,7 @@ export class MysqlConnection implements
 
   async *sendData(
     data: Uint8Array,
-    options?: ConvertTypeOptions,
+    options?: SqlxQueryOptions,
   ): AsyncGenerator<
     ConnectionSendDataNext,
     ConnectionSendDataResult | undefined
@@ -578,7 +577,7 @@ export class MysqlConnection implements
 
   async executeRaw(
     data: Uint8Array,
-    options?: ConvertTypeOptions,
+    options?: SqlxQueryOptions,
   ): Promise<number | undefined> {
     const gen = this.sendData(data, options);
     let result = await gen.next();
@@ -599,7 +598,7 @@ export class MysqlConnection implements
 
   async *queryManyObjectRaw<T extends Row<unknown> = Row<unknown>>(
     data: Uint8Array,
-    options?: ConvertTypeOptions,
+    options?: SqlxQueryOptions,
   ): AsyncIterableIterator<T> {
     for await (const res of this.sendData(data, options)) {
       yield getRowObject(res.fields, res.row) as T;
@@ -608,7 +607,7 @@ export class MysqlConnection implements
 
   async *queryManyArrayRaw<T extends ArrayRow<unknown> = ArrayRow<unknown>>(
     data: Uint8Array,
-    options?: ConvertTypeOptions,
+    options?: SqlxQueryOptions,
   ): AsyncIterableIterator<T> {
     for await (const res of this.sendData(data, options)) {
       const row = res.row as T;
