@@ -29,6 +29,7 @@
     "@std/semver": "jsr:@std/semver@^0.220.1",
     "@std/testing": "jsr:@std/testing@^0.221.0",
     "@std/text": "jsr:@std/text@^0.222.1",
-    "@std/yaml": "jsr:@std/yaml@^0.223.0"
+    "@std/yaml": "jsr:@std/yaml@^0.223.0",
+    "@stdext/encoding": "jsr:@stdext/encoding@^0.0.2"
   }
 }
