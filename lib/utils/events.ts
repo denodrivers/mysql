@@ -5,7 +5,6 @@ import {
   type SqlxConnectableEventInit,
   SqlxEventTarget,
   SqlxPoolConnectableAcquireEvent,
-  SqlxPoolConnectableDestroyEvent,
   SqlxPoolConnectableReleaseEvent,
   type SqlxPoolConnectionEventType,
 } from "@halvardm/sqlx";
@@ -58,10 +57,6 @@ export class MysqlPoolReleaseEvent
   extends SqlxPoolConnectableReleaseEvent<MysqlPoolEventInit> {
 }
 
-export class MysqlPoolDestroyEvent
-  extends SqlxPoolConnectableDestroyEvent<MysqlPoolEventInit> {
-}
-
 export type MysqlClientEvents =
   | MysqlClientConnectEvent
   | MysqlClientCloseEvent;
@@ -70,5 +65,4 @@ export type MysqlPoolEvents =
   | MysqlClientConnectEvent
   | MysqlClientCloseEvent
   | MysqlPoolAcquireEvent
-  | MysqlPoolReleaseEvent
-  | MysqlPoolDestroyEvent;
+  | MysqlPoolReleaseEvent;

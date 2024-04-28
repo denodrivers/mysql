@@ -19,10 +19,8 @@ import {
   MysqlPoolAcquireEvent,
   MysqlPoolCloseEvent,
   MysqlPoolConnectEvent,
-  MysqlPoolDestroyEvent,
   MysqlPoolReleaseEvent,
 } from "./utils/events.ts";
-import { logger } from "./utils/logger.ts";
 import { MysqlClientEventTarget } from "./utils/events.ts";
 
 export interface MysqlClientPoolOptions
@@ -129,6 +127,9 @@ export class MysqlClientPool extends SqlxBase implements
 
   async acquire(): Promise<MysqlPoolClient> {
     const client = await this.deferredStack.pop();
+    if (!client.connected) {
+      await client.connection.connect();
+    }
 
     this.eventTarget.dispatchEvent(
       new MysqlPoolAcquireEvent({ connectable: client }),
@@ -144,20 +145,12 @@ export class MysqlClientPool extends SqlxBase implements
       this.deferredStack.push(client);
     } catch (e) {
       if (e instanceof SqlxError && e.message === "Max pool size reached") {
-        logger().debug(e.message);
         await client.connection.close();
         throw e;
       } else {
         throw e;
       }
     }
-  }
-
-  async destroy(client: MysqlPoolClient): Promise<void> {
-    this.eventTarget.dispatchEvent(
-      new MysqlPoolDestroyEvent({ connectable: client }),
-    );
-    await client.connection.close();
   }
 
   async [Symbol.asyncDispose](): Promise<void> {
