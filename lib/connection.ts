@@ -439,6 +439,8 @@ export class MysqlConnection extends SqlxBase implements
             const content = Deno.readTextFileSync(caCert);
             tlsOptions.caCerts.push(content);
           }
+          // Due to some random bug in CI, we need to sort this for the test to pass consistently.
+          tlsOptions.caCerts.sort();
         }
 
         if (config.parameters.sslKey) {

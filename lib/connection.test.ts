@@ -87,9 +87,9 @@ Deno.test("Connection", async (t) => {
           mode: "VERIFY_IDENTITY",
           caCerts: [
             "ca",
-            "key",
-            "cert",
             "ca2",
+            "cert",
+            "key",
           ],
           cert: "cert",
           hostname: "127.0.0.1",
