@@ -16,7 +16,7 @@
     "db:stop": "docker compose down --remove-orphans --volumes"
   },
   "imports": {
-    "@halvardm/sqlx": "jsr:@halvardm/sqlx@0.0.0-12",
+    "@halvardm/sqlx": "jsr:@halvardm/sqlx@0.0.0-13",
     "@std/assert": "jsr:@std/assert@^0.221.0",
     "@std/async": "jsr:@std/async@^0.221.0",
     "@std/crypto": "jsr:@std/crypto@^0.221.0",
