@@ -1,69 +1,64 @@
 name: ci
 
-on: [push, pull_request]
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+
+env:
+  DENO_VERSION: vx.x.x
 
 jobs:
-  fmt:
+  check:
+    name: Check format and lint
     runs-on: ubuntu-latest
-    continue-on-error: true
-    steps:
-      - uses: actions/checkout@v1
-      - name: Install Deno 1.x
-        uses: denoland/setup-deno@v1
-        with:
-          deno-version: v1.x
-      - name: Check fmt
-        run: deno fmt --check
-  test:
-    runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        DENO_VERSION:
-          - v1.x
-        DB_VERSION:
-          - mysql:5.5
-          - mysql:5.6
-          - mysql:5.7
-          - mysql:8
-          - mysql:latest
-          - mariadb:5.5
-          - mariadb:10.0
-          - mariadb:10.1
-          - mariadb:10.2
-          - mariadb:10.3
-          - mariadb:10.4
-#          - mariadb:latest
 
     steps:
-      - uses: actions/checkout@v1
-      - name: Install Deno ${{ matrix.DENO_VERSION }}
+      - name: Clone repo
+        uses: actions/checkout@v4
+
+      - name: Install deno
         uses: denoland/setup-deno@v1
         with:
-          deno-version: ${{ matrix.DENO_VERSION }}
-      - name: Show Deno version
-        run: deno --version
-      - name: Start ${{ matrix.DB_VERSION }}
-        run: |
-          sudo mkdir -p /var/run/mysqld/tmp
-          sudo chmod -R 777 /var/run/mysqld
-          docker container run --name mysql --rm -d -p 3306:3306 \
-            -v /var/run/mysqld:/var/run/mysqld \
-            -v /var/run/mysqld/tmp:/tmp \
-            -e MYSQL_ROOT_PASSWORD=root \
-            ${{ matrix.DB_VERSION }}
-          ./.github/workflows/wait-for-mysql.sh
-      - name: Run tests (TCP)
-        run: |
-          deno test --allow-env --allow-net=127.0.0.1:3306 ./test.ts
-      - name: Run tests (--unstable) (UNIX domain socket)
-        run: |
-          SOCKPATH=/var/run/mysqld/mysqld.sock
-          if [[ "${{ matrix.DB_VERSION }}" == "mysql:5.5" ]]; then
-            SOCKPATH=/var/run/mysqld/tmp/mysql.sock
-          fi
-          echo "DROP USER 'root'@'localhost';" | docker exec -i mysql mysql -proot
-          DB_SOCKPATH=$SOCKPATH TEST_METHODS=unix \
-            deno test --unstable --allow-env \
-            --allow-read=/var/run/mysqld/ --allow-write=/var/run/mysqld/ \
-            ./test.ts
+          deno-version: ${{env.DENO_VERSION}}
+
+      - name: Check
+        run: deno task check
+
+  tests:
+    name: Run tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Clone repo
+        uses: actions/checkout@v4
+
+      - name: Install deno
+        uses: denoland/setup-deno@v1
+        with:
+          deno-version: ${{env.DENO_VERSION}}
+
+      - name: Test
+        run: deno task test:ga
+
+  publish:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install deno
+        uses: denoland/setup-deno@v1
+        with:
+          deno-version: ${{env.DENO_VERSION}}
+
+      - name: Publish (dry run)
+        run: deno publish --dry-run
