@@ -1,9 +1,8 @@
-# deno_mysql
+# @db/mysql
 
-[![Build Status](https://github.com/manyuanrong/deno_mysql/workflows/ci/badge.svg?branch=master)](https://github.com/manyuanrong/deno_mysql/actions)
-![GitHub](https://img.shields.io/github/license/manyuanrong/deno_mysql.svg)
-![GitHub release](https://img.shields.io/github/release/manyuanrong/deno_mysql.svg)
-![(Deno)](https://img.shields.io/badge/deno-1.0.0-green.svg)
+[![Build Status](https://github.com/denodrivers/mysql/actions/workflows/ci.yml/badge.svg)](https://github.com/denodrivers/mysql/actions/workflows/ci.yml)
+[![JSR](https://jsr.io/badges/@db/mysql)](https://jsr.io/@db/mysql)
+[![JSR Score](https://jsr.io/badges/@db/mysql/score)](https://jsr.io/@db/mysql)
 
 MySQL and MariaDB database driver for Deno.
 
@@ -12,45 +11,55 @@ On this basis, there is also an ORM library:
 
 欢迎国内的小伙伴加我专门建的 Deno QQ 交流群：698469316
 
-## API
+## Installation
 
-### connect
+This package is published on [JSR](https://jsr.io/@db/mysql)
 
-```ts
-import { Client } from "https://deno.land/x/mysql/mod.ts";
-const client = await new Client().connect({
-  hostname: "127.0.0.1",
-  username: "root",
-  db: "dbname",
-  password: "password",
-});
+```
+deno add @db/mysql
 ```
 
-### connect pool
+## Usage
 
-Create client with connection pool.
+See [Deno Standard Library Extended SQL](https://jsr.io/@stdext/sql) for general
+API interfaces and examples
 
-pool size is auto increment from 0 to `poolSize`
+### Client
 
 ```ts
-import { Client } from "https://deno.land/x/mysql/mod.ts";
-const client = await new Client().connect({
-  hostname: "127.0.0.1",
-  username: "root",
-  db: "dbname",
-  poolSize: 3, // connection limit
-  password: "password",
-});
+import { MysqlClient } from "jsr:@db/mysql@3.0.0";
+await using client = new MysqlClient(
+  "mysql://root:password@0.0.0.0:3306/dbname",
+);
+await client.connect();
+await client.execute("CREATE TABLE test (testcol TEXT)");
+await client.query("SELECT * FROM test");
 ```
 
-### create database
+### Client Pool
+
+```ts
+import { MysqlClientPool } from "jsr:@db/mysql@3.0.0";
+await using clientPool = new MysqlClientPool(
+  "mysql://root:password@0.0.0.0:3306/dbname",
+  { maxSize: 3 },
+);
+await clientPool.connect();
+const client = await clientPool.aquire();
+await client.query("SELECT * FROM test");
+clientPool.release();
+```
+
+### Queries
+
+#### create database
 
 ```ts
 await client.execute(`CREATE DATABASE IF NOT EXISTS enok`);
 await client.execute(`USE enok`);
 ```
 
-### create table
+#### create table
 
 ```ts
 await client.execute(`DROP TABLE IF EXISTS users`);
@@ -64,30 +73,30 @@ await client.execute(`
 `);
 ```
 
-### insert
+#### insert
 
 ```ts
 let result = await client.execute(`INSERT INTO users(name) values(?)`, [
   "manyuanrong",
 ]);
 console.log(result);
-// { affectedRows: 1, lastInsertId: 1 }
+// 1
 ```
 
-### update
+#### update
 
 ```ts
 let result = await client.execute(`update users set ?? = ?`, ["name", "MYR"]);
 console.log(result);
-// { affectedRows: 1, lastInsertId: 0 }
+// 1
 ```
 
-### delete
+#### delete
 
 ```ts
 let result = await client.execute(`delete from users where ?? = ?`, ["id", 1]);
 console.log(result);
-// { affectedRows: 1, lastInsertId: 0 }
+// 1
 ```
 
 ### query
@@ -100,38 +109,8 @@ const queryWithParams = await client.query(
   ["id", "users", 1],
 );
 console.log(users, queryWithParams);
+// [{ id: 1, name: "enok" }]
 ```
-
-### execute
-
-There are two ways to execute an SQL statement.
-
-First and default one will return you an `rows` key containing an array of rows:
-
-```ts
-const { rows: users } = await client.execute(`select * from users`);
-console.log(users);
-```
-
-The second one will return you an `iterator` key containing an
-`[Symbol.asyncIterator]` property:
-
-```ts
-await client.useConnection(async (conn) => {
-  // note the third parameter of execute() method.
-  const { iterator: users } = await conn.execute(
-    `select * from users`,
-    /* params: */ [],
-    /* iterator: */ true,
-  );
-  for await (const user of users) {
-    console.log(user);
-  }
-});
-```
-
-The second method is recommended only for SELECT queries that might contain many
-results (e.g. 100k rows).
 
 ### transaction
 
@@ -157,47 +136,157 @@ You usually need not specify the caCert, unless the certificate is not included
 in the default root certificates.
 
 ```ts
-import { Client, TLSConfig, TLSMode } from "https://deno.land/x/mysql/mod.ts";
-const tlsConfig: TLSConfig = {
-  mode: TLSMode.VERIFY_IDENTITY,
-  caCerts: [
-    await Deno.readTextFile("capath"),
-  ],
-};
-const client = await new Client().connect({
-  hostname: "127.0.0.1",
-  username: "root",
-  db: "dbname",
-  password: "password",
-  tls: tlsConfig,
+const client = new MysqlClient("mysql://root:password@0.0.0.0:3306/dbname", {
+  tls: {
+    mode: TLSMode.VERIFY_IDENTITY,
+    caCerts: [await Deno.readTextFile("capath")],
+  },
 });
+
+await client.connect();
 ```
 
 ### close
 
+If async dispose is not used, you have to manually close the connection at the
+end of your script.
+
 ```ts
+// Async dispose
+await using client = new MysqlClient(
+  "mysql://root:password@0.0.0.0:3306/dbname",
+);
+await client.connect();
+// no need to close the client
+
+// Normal creation of class
+const client = new MysqlClient("mysql://root:password@0.0.0.0:3306/dbname");
+await client.connect();
+// manual closing of connection needed.
 await client.close();
 ```
 
 ## Logging
 
-The driver logs to the console by default.
+Logging is set up using [std/log](https://jsr.io/@std/log)
 
-To disable logging:
+To change logging, add this in the entrypoint of your script:
 
 ```ts
-import { configLogger } from "https://deno.land/x/mysql/mod.ts";
-await configLogger({ enable: false });
+import { ConsoleHandler, setup } from "@std/log";
+import { MODULE_NAME } from "jsr:@db/mysql@3.0.0";
+
+setup({
+  handlers: {
+    console: new ConsoleHandler("DEBUG"),
+  },
+  loggers: {
+    // configure default logger available via short-hand methods above
+    default: {
+      level: "WARN",
+      handlers: ["console"],
+    },
+    [MODULE_NAME]: {
+      level: "WARN",
+      handlers: ["console"],
+    },
+  },
+});
 ```
 
 ## Test
 
-The tests require a database to run against.
+To run the tests, Docker and Docker Compose is required.
 
-```bash
-docker container run --rm -d -p 3306:3306 -e MYSQL_ALLOW_EMPTY_PASSWORD=true docker.io/mariadb:latest
-deno test --allow-env --allow-net=127.0.0.1:3306 ./test.ts
+Run using
+
+```
+deno task test
 ```
 
-Use different docker images to test against different versions of MySQL and
-MariaDB. Please see [ci.yml](./.github/workflows/ci.yml) for examples.
+## Upgrade from v2 to v3
+
+From version `3` onwards, this package will only be published to
+[JSR](https://jsr.io/@db/mysql). Version `3` will also be adapted to use the
+standard interfaces from [stdext/sql](https://jsr.io/@stdext/sql), thus this is
+a breaking change where you will have to adjust your usage accordingly.
+
+### Client
+
+V2:
+
+```ts
+import { Client } from "https://deno.land/x/mysql/mod.ts";
+const client = await new Client().connect({
+  hostname: "127.0.0.1",
+  username: "root",
+  db: "dbname",
+  password: "password",
+});
+```
+
+V3:
+
+```ts
+import { MysqlClient } from "jsr:@db/mysql@3.0.0";
+await using client = new MysqlClient(
+  "mysql://root:password@0.0.0.0:3306/dbname",
+);
+await client.connect();
+```
+
+### ClientPool
+
+V2:
+
+```ts
+import { Client } from "https://deno.land/x/mysql/mod.ts";
+const client = await new Client().connect({
+  hostname: "127.0.0.1",
+  username: "root",
+  db: "dbname",
+  poolSize: 3, // connection limit
+  password: "password",
+});
+await client.query("SELECT * FROM test");
+```
+
+V3:
+
+```ts
+import { MysqlClientPool } from "jsr:@db/mysql@3.0.0";
+await using clientPool = new MysqlClientPool(
+  "mysql://root:password@0.0.0.0:3306/dbname",
+  { maxSize: 3 },
+);
+await clientPool.connect();
+const client = await clientPool.aquire();
+await client.query("SELECT * FROM test");
+clientPool.release();
+```
+
+### Iterators
+
+V2:
+
+```ts
+await client.useConnection(async (conn) => {
+  // note the third parameter of execute() method.
+  const { iterator: users } = await conn.execute(
+    `select * from users`,
+    /* params: */ [],
+    /* iterator: */ true,
+  );
+  for await (const user of users) {
+    console.log(user);
+  }
+});
+```
+
+V3:
+
+```ts
+for await (const user of client.queryMany("SELECT * FROM users")) {
+  console.log(user);
+}
+```
