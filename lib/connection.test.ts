@@ -1,11 +1,25 @@
 import { assertEquals, assertInstanceOf } from "@std/assert";
 import { emptyDir } from "@std/fs";
 import { join } from "@std/path";
-import { MysqlConnection } from "./connection.ts";
-import { DIR_TMP_TEST } from "./utils/testing.ts";
+import { MysqlConnectable, MysqlConnection } from "./connection.ts";
+import { DIR_TMP_TEST, services } from "./utils/testing.ts";
 import { buildQuery } from "./packets/builders/query.ts";
 import { URL_TEST_CONNECTION } from "./utils/testing.ts";
-import { connectionConstructorTest } from "@halvardm/sqlx/testing";
+import { assertIsSqlConnection } from "@stdext/sql";
+import { _testSqlConnectable, testSqlConnection } from "@stdext/sql/testing";
+
+Deno.test("connection and connectable contstructs", async (t) => {
+  for (const service of services) {
+    await t.step(`Testing ${service.name}`, async (t) => {
+      await t.step(`TCP`, () => {
+        const connection = new MysqlConnection(service.url);
+        testSqlConnection(connection, { connectionUrl: service.url });
+        const connectable = new MysqlConnectable(connection);
+        _testSqlConnectable(connectable, connection);
+      });
+    });
+  }
+});
 
 Deno.test("Connection", async (t) => {
   await emptyDir(DIR_TMP_TEST);
@@ -25,6 +39,7 @@ Deno.test("Connection", async (t) => {
 
     assertInstanceOf(connection, MysqlConnection);
     assertEquals(connection.connectionUrl, URL_TEST_CONNECTION);
+    assertIsSqlConnection(connection);
 
     await t.step("can parse connection config simple", () => {
       const url = new URL("mysql://user:pass@127.0.0.1:3306/db");
@@ -128,13 +143,6 @@ Deno.test("Connection", async (t) => {
     });
 
     await connection.close();
-  });
-
-  await connectionConstructorTest({
-    t,
-    Connection: MysqlConnection,
-    connectionUrl: URL_TEST_CONNECTION,
-    connectionOptions: {},
   });
 
   await t.step("can query database", async (t) => {
@@ -395,27 +403,29 @@ Deno.test("Connection", async (t) => {
       ]);
     });
 
-    await t.step("can insert to table using executeRaw", async () => {
-      const data = buildQuery("INSERT INTO test (id) VALUES (4);");
-      const result = await connection.executeRaw(data);
+    await t.step("can insert to table using execute", async () => {
+      const result = await connection.execute(
+        "INSERT INTO test (id) VALUES (4);",
+      );
       assertEquals(result, 1);
     });
 
-    await t.step("can select from table using executeRaw", async () => {
-      const data = buildQuery("SELECT * FROM test;");
-      const result = await connection.executeRaw(data);
+    await t.step("can select from table using execute", async () => {
+      const result = await connection.execute("SELECT * FROM test;");
       assertEquals(result, undefined);
     });
 
     await t.step("can insert to table using queryManyObjectRaw", async () => {
-      const data = buildQuery("INSERT INTO test (id) VALUES (5);");
-      const result = await Array.fromAsync(connection.queryManyObjectRaw(data));
+      const result = await Array.fromAsync(
+        connection.queryMany("INSERT INTO test (id) VALUES (5);"),
+      );
       assertEquals(result, []);
     });
 
     await t.step("can select from table using queryManyObjectRaw", async () => {
-      const data = buildQuery("SELECT * FROM test;");
-      const result = await Array.fromAsync(connection.queryManyObjectRaw(data));
+      const result = await Array.fromAsync(
+        connection.queryMany("SELECT * FROM test;"),
+      );
       assertEquals(result, [
         { id: 1 },
         { id: 2 },
@@ -426,14 +436,16 @@ Deno.test("Connection", async (t) => {
     });
 
     await t.step("can insert to table using queryManyArrayRaw", async () => {
-      const data = buildQuery("INSERT INTO test (id) VALUES (6);");
-      const result = await Array.fromAsync(connection.queryManyArrayRaw(data));
+      const result = await Array.fromAsync(
+        connection.queryManyArray("INSERT INTO test (id) VALUES (6);"),
+      );
       assertEquals(result, []);
     });
 
     await t.step("can select from table using queryManyArrayRaw", async () => {
-      const data = buildQuery("SELECT * FROM test;");
-      const result = await Array.fromAsync(connection.queryManyArrayRaw(data));
+      const result = await Array.fromAsync(
+        connection.queryManyArray("SELECT * FROM test;"),
+      );
       assertEquals(result, [
         [1],
         [2],

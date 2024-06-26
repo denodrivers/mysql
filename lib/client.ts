@@ -1,18 +1,18 @@
-import { SqlxClient } from "@halvardm/sqlx";
+import type { SqlClient } from "@stdext/sql";
 import { MysqlConnection, type MysqlConnectionOptions } from "./connection.ts";
 import type { MysqlParameterType } from "./packets/parsers/result.ts";
 import {
-  MysqlClientCloseEvent,
   MysqlClientEventTarget,
+  MysqlCloseEvent,
+  MysqlConnectEvent,
 } from "./utils/events.ts";
-import { MysqlClientConnectEvent } from "../mod.ts";
 import {
-  type MysqlPrepared,
+  type MysqlPreparedStatement,
   type MysqlQueryOptions,
-  type MySqlTransaction,
+  type MysqlTransaction,
   MysqlTransactionable,
   type MysqlTransactionOptions,
-} from "./sqlx.ts";
+} from "./core.ts";
 
 export interface MysqlClientOptions extends MysqlConnectionOptions {
 }
@@ -21,15 +21,15 @@ export interface MysqlClientOptions extends MysqlConnectionOptions {
  * MySQL client
  */
 export class MysqlClient extends MysqlTransactionable implements
-  SqlxClient<
+  SqlClient<
     MysqlClientEventTarget,
     MysqlConnectionOptions,
-    MysqlConnection,
     MysqlParameterType,
     MysqlQueryOptions,
-    MysqlPrepared,
+    MysqlConnection,
+    MysqlPreparedStatement,
     MysqlTransactionOptions,
-    MySqlTransaction
+    MysqlTransaction
   > {
   eventTarget: MysqlClientEventTarget;
   connectionUrl: string;
@@ -48,12 +48,12 @@ export class MysqlClient extends MysqlTransactionable implements
   async connect(): Promise<void> {
     await this.connection.connect();
     this.eventTarget.dispatchEvent(
-      new MysqlClientConnectEvent({ connectable: this }),
+      new MysqlConnectEvent({ connection: this.connection }),
     );
   }
   async close(): Promise<void> {
     this.eventTarget.dispatchEvent(
-      new MysqlClientCloseEvent({ connectable: this }),
+      new MysqlCloseEvent({ connection: this.connection }),
     );
     await this.connection.close();
   }

@@ -1,73 +1,86 @@
+import type {
+  SqlClientPool,
+  SqlClientPoolOptions,
+  SqlPoolClient,
+  SqlPoolClientOptions,
+} from "@stdext/sql";
+import { DeferredStack } from "@stdext/collections";
 import {
-  SqlxBase,
-  type SqlxClientPool,
-  type SqlxClientPoolOptions,
-  SqlxDeferredStack,
-  SqlxError,
-  type SqlxPoolClient,
-} from "@halvardm/sqlx";
-import {
-  type MysqlPrepared,
+  type MysqlPreparedStatement,
   type MysqlQueryOptions,
-  type MySqlTransaction,
+  type MysqlTransaction,
   MysqlTransactionable,
   type MysqlTransactionOptions,
-} from "./sqlx.ts";
+} from "./core.ts";
 import { MysqlConnection, type MysqlConnectionOptions } from "./connection.ts";
 import type { MysqlParameterType } from "./packets/parsers/result.ts";
 import {
-  MysqlPoolAcquireEvent,
-  MysqlPoolCloseEvent,
-  MysqlPoolConnectEvent,
-  MysqlPoolReleaseEvent,
+  MysqlAcquireEvent,
+  MysqlCloseEvent,
+  MysqlConnectEvent,
+  MysqlPoolClientEventTarget,
+  MysqlReleaseEvent,
 } from "./utils/events.ts";
-import { MysqlClientEventTarget } from "./utils/events.ts";
-
-export interface MysqlClientPoolOptions
-  extends MysqlConnectionOptions, SqlxClientPoolOptions {
-}
 
 export class MysqlPoolClient extends MysqlTransactionable
   implements
-    SqlxPoolClient<
+    SqlPoolClient<
       MysqlConnectionOptions,
       MysqlConnection,
       MysqlParameterType,
       MysqlQueryOptions,
-      MysqlPrepared,
+      MysqlPreparedStatement,
       MysqlTransactionOptions,
-      MySqlTransaction
+      MysqlTransaction
     > {
-  /**
-   * Must be set by the client pool on creation
-   * @inheritdoc
-   */
-  release(): Promise<void> {
-    throw new Error("Method not implemented.");
+  declare readonly options:
+    & MysqlConnectionOptions
+    & MysqlQueryOptions
+    & SqlPoolClientOptions;
+  #releaseFn?: () => Promise<void>;
+
+  #disposed: boolean = false;
+  get disposed(): boolean {
+    return this.#disposed;
+  }
+  constructor(
+    connection: MysqlPoolClient["connection"],
+    options: MysqlPoolClient["options"] = {},
+  ) {
+    super(connection, options);
+    if (this.options?.releaseFn) {
+      this.#releaseFn = this.options.releaseFn;
+    }
+  }
+  async release() {
+    this.#disposed = true;
+    await this.#releaseFn?.();
   }
 
-  async [Symbol.asyncDispose](): Promise<void> {
-    await this.release();
+  [Symbol.asyncDispose](): Promise<void> {
+    return this.release();
   }
 }
 
-export class MysqlClientPool extends SqlxBase implements
-  SqlxClientPool<
+export class MysqlClientPool implements
+  SqlClientPool<
     MysqlConnectionOptions,
-    MysqlConnection,
     MysqlParameterType,
     MysqlQueryOptions,
-    MysqlPrepared,
+    MysqlConnection,
+    MysqlPreparedStatement,
     MysqlTransactionOptions,
-    MySqlTransaction,
+    MysqlTransaction,
     MysqlPoolClient,
-    SqlxDeferredStack<MysqlPoolClient>
+    MysqlPoolClientEventTarget
   > {
+  declare readonly options:
+    & MysqlConnectionOptions
+    & MysqlQueryOptions
+    & SqlClientPoolOptions;
   readonly connectionUrl: string;
-  readonly connectionOptions: MysqlClientPoolOptions;
-  readonly eventTarget: EventTarget;
-  readonly deferredStack: SqlxDeferredStack<MysqlPoolClient>;
-  readonly queryOptions: MysqlQueryOptions;
+  readonly eventTarget: MysqlPoolClientEventTarget;
+  readonly deferredStack: DeferredStack<MysqlConnection>;
 
   #connected: boolean = false;
 
@@ -77,38 +90,34 @@ export class MysqlClientPool extends SqlxBase implements
 
   constructor(
     connectionUrl: string | URL,
-    connectionOptions: MysqlClientPoolOptions = {},
+    options: MysqlClientPool["options"] = {},
   ) {
-    super();
     this.connectionUrl = connectionUrl.toString();
-    this.connectionOptions = connectionOptions;
-    this.queryOptions = connectionOptions;
-    this.eventTarget = new MysqlClientEventTarget();
-    this.deferredStack = new SqlxDeferredStack<MysqlPoolClient>(
-      connectionOptions,
-    );
+    this.options = options;
+    this.eventTarget = new MysqlPoolClientEventTarget();
+    this.deferredStack = new DeferredStack<MysqlConnection>({
+      ...options,
+      removeFn: async (element) => {
+        await element._value.close();
+      },
+    });
   }
 
   async connect(): Promise<void> {
     for (let i = 0; i < this.deferredStack.maxSize; i++) {
       const conn = new MysqlConnection(
         this.connectionUrl,
-        this.connectionOptions,
+        this.options,
       );
-      const client = new MysqlPoolClient(
-        conn,
-        this.queryOptions,
-      );
-      client.release = () => this.release(client);
 
-      if (!this.connectionOptions.lazyInitialization) {
-        await client.connection.connect();
+      if (!this.options.lazyInitialization) {
+        await conn.connect();
         this.eventTarget.dispatchEvent(
-          new MysqlPoolConnectEvent({ connectable: client }),
+          new MysqlConnectEvent({ connection: conn }),
         );
       }
 
-      this.deferredStack.push(client);
+      this.deferredStack.add(conn);
     }
 
     this.#connected = true;
@@ -117,40 +126,39 @@ export class MysqlClientPool extends SqlxBase implements
   async close(): Promise<void> {
     this.#connected = false;
 
-    for (const client of this.deferredStack.elements) {
+    for (const el of this.deferredStack.elements) {
       this.eventTarget.dispatchEvent(
-        new MysqlPoolCloseEvent({ connectable: client }),
+        new MysqlCloseEvent({ connection: el._value }),
       );
-      await client.connection.close();
+      await el.remove();
     }
   }
 
   async acquire(): Promise<MysqlPoolClient> {
-    const client = await this.deferredStack.pop();
-    if (!client.connected) {
-      await client.connection.connect();
+    const el = await this.deferredStack.pop();
+
+    if (!el.value.connected) {
+      await el.value.connect();
     }
 
     this.eventTarget.dispatchEvent(
-      new MysqlPoolAcquireEvent({ connectable: client }),
+      new MysqlAcquireEvent({ connection: el.value }),
     );
-    return client;
-  }
 
-  async release(client: MysqlPoolClient): Promise<void> {
-    this.eventTarget.dispatchEvent(
-      new MysqlPoolReleaseEvent({ connectable: client }),
+    const c = new MysqlPoolClient(
+      el.value,
+      {
+        ...this.options,
+        releaseFn: async () => {
+          this.eventTarget.dispatchEvent(
+            new MysqlReleaseEvent({ connection: el._value }),
+          );
+          await el.release();
+        },
+      },
     );
-    try {
-      this.deferredStack.push(client);
-    } catch (e) {
-      if (e instanceof SqlxError && e.message === "Max pool size reached") {
-        await client.connection.close();
-        throw e;
-      } else {
-        throw e;
-      }
-    }
+
+    return c;
   }
 
   async [Symbol.asyncDispose](): Promise<void> {

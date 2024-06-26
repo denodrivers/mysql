@@ -26,17 +26,19 @@ import auth from "./utils/hash.ts";
 import { ServerCapabilities } from "./constant/capabilities.ts";
 import { buildSSLRequest } from "./packets/builders/tls.ts";
 import { logger } from "./utils/logger.ts";
-import {
-  type ArrayRow,
-  type Row,
-  SqlxBase,
-  type SqlxConnection,
-  type SqlxConnectionOptions,
-  type SqlxQueryOptions,
-} from "@halvardm/sqlx";
+import type {
+  ArrayRow,
+  Row,
+  SqlConnectable,
+  SqlConnection,
+  SqlConnectionOptions,
+  SqlQueryOptions,
+} from "@stdext/sql";
 import { resolve } from "@std/path";
 import { toCamelCase } from "@std/text";
 import { AuthPluginName } from "./auth_plugins/mod.ts";
+import { buildQuery } from "./packets/builders/query.ts";
+import type { MysqlQueryOptions } from "./core.ts";
 
 /**
  * Connection state
@@ -49,7 +51,7 @@ export enum ConnectionState {
 }
 
 export type ConnectionSendDataNext = {
-  row: ArrayRow<MysqlParameterType>;
+  row: ArrayRow<unknown>;
   fields: FieldInfo[];
 };
 export type ConnectionSendDataResult = {
@@ -71,9 +73,12 @@ export const TlsMode = {
 } as const;
 export type TlsMode = typeof TlsMode[keyof typeof TlsMode];
 
-export interface TlsOptions extends Deno.ConnectTlsOptions {
-  mode: TlsMode;
-}
+export type TlsOptions =
+  & Deno.ConnectTlsOptions
+  & Partial<Deno.TlsCertifiedKeyPem>
+  & {
+    mode: TlsMode;
+  };
 
 /**
  * Aditional connection parameters
@@ -127,14 +132,16 @@ export interface ConnectionConfig {
   parameters: ConnectionParameters;
 }
 
-export interface MysqlConnectionOptions extends SqlxConnectionOptions {
+export interface MysqlConnectionOptions extends SqlConnectionOptions {
   tls?: Partial<TlsOptions>;
 }
 
 /** Connection for mysql */
-export class MysqlConnection extends SqlxBase implements
-  SqlxConnection<
-    MysqlConnectionOptions
+export class MysqlConnection implements
+  SqlConnection<
+    MysqlConnectionOptions,
+    MysqlParameterType,
+    MysqlQueryOptions
   > {
   state: ConnectionState = ConnectionState.CONNECTING;
   capabilities: number = 0;
@@ -144,7 +151,7 @@ export class MysqlConnection extends SqlxBase implements
   private _timedOut = false;
 
   readonly connectionUrl: string;
-  readonly connectionOptions: MysqlConnectionOptions;
+  readonly options: MysqlConnectionOptions;
   readonly config: ConnectionConfig;
 
   get conn(): Deno.Conn {
@@ -171,9 +178,8 @@ export class MysqlConnection extends SqlxBase implements
     connectionUrl: string | URL,
     connectionOptions: MysqlConnectionOptions = {},
   ) {
-    super();
     this.connectionUrl = connectionUrl.toString().split("?")[0];
-    this.connectionOptions = connectionOptions;
+    this.options = connectionOptions;
     this.config = this.#parseConnectionConfig(
       connectionUrl,
       connectionOptions,
@@ -525,7 +531,7 @@ export class MysqlConnection extends SqlxBase implements
 
   async *sendData(
     data: Uint8Array,
-    options?: SqlxQueryOptions,
+    options?: SqlQueryOptions,
   ): AsyncGenerator<
     ConnectionSendDataNext,
     ConnectionSendDataResult | undefined
@@ -577,10 +583,12 @@ export class MysqlConnection extends SqlxBase implements
     }
   }
 
-  async executeRaw(
-    data: Uint8Array,
-    options?: SqlxQueryOptions,
+  async execute(
+    sql: string,
+    params?: MysqlParameterType[],
+    options?: MysqlQueryOptions,
   ): Promise<number | undefined> {
+    const data = buildQuery(sql, params);
     const gen = this.sendData(data, options);
     let result = await gen.next();
     if (result.done) {
@@ -597,20 +605,22 @@ export class MysqlConnection extends SqlxBase implements
     logger().debug(`executeRaw overflow: ${JSON.stringify(debugRest)}`);
     return undefined;
   }
-
-  async *queryManyObjectRaw<T extends Row<unknown> = Row<unknown>>(
-    data: Uint8Array,
-    options?: SqlxQueryOptions,
-  ): AsyncIterableIterator<T> {
+  async *queryMany<T extends Row<unknown> = Row<unknown>>(
+    sql: string,
+    params?: MysqlParameterType[],
+    options?: MysqlQueryOptions,
+  ): AsyncGenerator<T> {
+    const data = buildQuery(sql, params);
     for await (const res of this.sendData(data, options)) {
       yield getRowObject(res.fields, res.row) as T;
     }
   }
-
-  async *queryManyArrayRaw<T extends ArrayRow<unknown> = ArrayRow<unknown>>(
-    data: Uint8Array,
-    options?: SqlxQueryOptions,
-  ): AsyncIterableIterator<T> {
+  async *queryManyArray<T extends ArrayRow<unknown> = ArrayRow<unknown>>(
+    sql: string,
+    params?: MysqlParameterType[],
+    options?: MysqlQueryOptions,
+  ): AsyncGenerator<T> {
+    const data = buildQuery(sql, params);
     for await (const res of this.sendData(data, options)) {
       const row = res.row as T;
       yield row as T;
@@ -619,5 +629,26 @@ export class MysqlConnection extends SqlxBase implements
 
   async [Symbol.asyncDispose](): Promise<void> {
     await this.close();
+  }
+}
+
+export class MysqlConnectable
+  implements SqlConnectable<MysqlConnectionOptions, MysqlConnection> {
+  readonly connection: MysqlConnection;
+  readonly options: MysqlConnectionOptions;
+
+  get connected(): boolean {
+    return this.connection.connected;
+  }
+
+  constructor(
+    connection: MysqlConnectable["connection"],
+    options: MysqlConnectable["options"] = {},
+  ) {
+    this.connection = connection;
+    this.options = options;
+  }
+  [Symbol.asyncDispose](): Promise<void> {
+    return this.connection.close();
   }
 }

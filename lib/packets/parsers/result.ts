@@ -1,6 +1,6 @@
 import type { BufferReader } from "../../utils/buffer.ts";
 import { MysqlDataType } from "../../constant/mysql_types.ts";
-import type { ArrayRow, Row, SqlxQueryOptions } from "@halvardm/sqlx";
+import type { ArrayRow, Row, SqlQueryOptions } from "@stdext/sql";
 
 export type MysqlParameterType =
   | null
@@ -72,7 +72,7 @@ export function parseField(reader: BufferReader): FieldInfo {
 export function parseRowArray(
   reader: BufferReader,
   fields: FieldInfo[],
-  options?: SqlxQueryOptions,
+  options?: SqlQueryOptions,
 ): ArrayRow<MysqlParameterType> {
   const row: MysqlParameterType[] = [];
   for (const field of fields) {
@@ -89,16 +89,16 @@ export function parseRowArray(
 export function parseRowObject(
   reader: BufferReader,
   fields: FieldInfo[],
-): Row<MysqlParameterType> {
+): Row<unknown> {
   const rowArray = parseRowArray(reader, fields);
   return getRowObject(fields, rowArray);
 }
 
 export function getRowObject(
   fields: FieldInfo[],
-  row: ArrayRow<MysqlParameterType>,
-): Row<MysqlParameterType> {
-  const obj: Row<MysqlParameterType> = {};
+  row: ArrayRow<unknown>,
+): Row<unknown> {
+  const obj: Row<unknown> = {};
   for (const [i, field] of fields.entries()) {
     const name = field.name;
     obj[name] = row[i];
@@ -112,7 +112,7 @@ export function getRowObject(
 function convertType(
   field: FieldInfo,
   val: string,
-  options?: SqlxQueryOptions,
+  options?: SqlQueryOptions,
 ): MysqlParameterType {
   if (options?.transformOutput) {
     // deno-lint-ignore no-explicit-any
